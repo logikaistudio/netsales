@@ -108,8 +108,8 @@ export default function Layout({ children }) {
                                 <UserCircle size={24} />
                             </div>
                             <div className="flex-1 min-w-0">
-                                <p className="text-sm font-semibold truncate text-foreground">Sales Staff</p>
-                                <p className="text-xs text-muted-foreground truncate">Jatim Area</p>
+                                <p className="text-sm font-semibold truncate text-foreground">Jabo Leader</p>
+                                <p className="text-xs text-muted-foreground truncate">Jabodetabek Area</p>
                             </div>
                             <button className="p-2 hover:bg-white rounded-lg transition-colors text-muted-foreground hover:text-red-500">
                                 <LogOut size={18} />
