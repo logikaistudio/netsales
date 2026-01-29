@@ -10,14 +10,18 @@
 -- DELETE FROM areas;
 
 -- 1. INSERT AREAS (Provinces/Regions)
-INSERT INTO areas (id, name) VALUES
+INSERT INTO areas (id, name) 
+OVERRIDING SYSTEM VALUE 
+VALUES
 (1, 'Jabodetabek'),
 (2, 'Jawa Barat'),
 (3, 'Banten')
 ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name;
 
 -- 2. INSERT SUB_AREAS (Cities/Kabupaten) for Jabodetabek
-INSERT INTO sub_areas (id, area_id, name) VALUES
+INSERT INTO sub_areas (id, area_id, name) 
+OVERRIDING SYSTEM VALUE 
+VALUES
 -- DKI Jakarta
 (3171, 1, 'Jakarta Pusat'),
 (3172, 1, 'Jakarta Utara'),
@@ -40,7 +44,9 @@ ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, area_id = EXCLUDED.area_id;
 -- 3. INSERT DISTRICTS (Kecamatan) for major cities
 
 -- Jakarta Selatan
-INSERT INTO districts (id, sub_area_id, name) VALUES
+INSERT INTO districts (id, sub_area_id, name) 
+OVERRIDING SYSTEM VALUE 
+VALUES
 (317401, 3174, 'Kebayoran Baru'),
 (317402, 3174, 'Kebayoran Lama'),
 (317403, 3174, 'Pesanggrahan'),
@@ -54,7 +60,9 @@ INSERT INTO districts (id, sub_area_id, name) VALUES
 ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, sub_area_id = EXCLUDED.sub_area_id;
 
 -- Jakarta Pusat
-INSERT INTO districts (id, sub_area_id, name) VALUES
+INSERT INTO districts (id, sub_area_id, name) 
+OVERRIDING SYSTEM VALUE 
+VALUES
 (317101, 3171, 'Gambir'),
 (317102, 3171, 'Tanah Abang'),
 (317103, 3171, 'Menteng'),
@@ -66,7 +74,9 @@ INSERT INTO districts (id, sub_area_id, name) VALUES
 ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, sub_area_id = EXCLUDED.sub_area_id;
 
 -- Tangerang
-INSERT INTO districts (id, sub_area_id, name) VALUES
+INSERT INTO districts (id, sub_area_id, name) 
+OVERRIDING SYSTEM VALUE 
+VALUES
 (360301, 3603, 'Tangerang'),
 (360302, 3603, 'Jatiuwung'),
 (360303, 3603, 'Batuceper'),
@@ -83,7 +93,9 @@ INSERT INTO districts (id, sub_area_id, name) VALUES
 ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, sub_area_id = EXCLUDED.sub_area_id;
 
 -- Tangerang Selatan
-INSERT INTO districts (id, sub_area_id, name) VALUES
+INSERT INTO districts (id, sub_area_id, name) 
+OVERRIDING SYSTEM VALUE 
+VALUES
 (360401, 3604, 'Serpong'),
 (360402, 3604, 'Serpong Utara'),
 (360403, 3604, 'Pondok Aren'),
@@ -94,7 +106,9 @@ INSERT INTO districts (id, sub_area_id, name) VALUES
 ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, sub_area_id = EXCLUDED.sub_area_id;
 
 -- Depok
-INSERT INTO districts (id, sub_area_id, name) VALUES
+INSERT INTO districts (id, sub_area_id, name) 
+OVERRIDING SYSTEM VALUE 
+VALUES
 (327601, 3276, 'Beji'),
 (327602, 3276, 'Pancoran Mas'),
 (327603, 3276, 'Cipayung'),
@@ -109,7 +123,9 @@ INSERT INTO districts (id, sub_area_id, name) VALUES
 ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, sub_area_id = EXCLUDED.sub_area_id;
 
 -- Bekasi
-INSERT INTO districts (id, sub_area_id, name) VALUES
+INSERT INTO districts (id, sub_area_id, name) 
+OVERRIDING SYSTEM VALUE 
+VALUES
 (327501, 3275, 'Bekasi Timur'),
 (327502, 3275, 'Bekasi Barat'),
 (327503, 3275, 'Bekasi Selatan'),
@@ -125,7 +141,9 @@ INSERT INTO districts (id, sub_area_id, name) VALUES
 ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, sub_area_id = EXCLUDED.sub_area_id;
 
 -- Jakarta Barat
-INSERT INTO districts (id, sub_area_id, name) VALUES
+INSERT INTO districts (id, sub_area_id, name) 
+OVERRIDING SYSTEM VALUE 
+VALUES
 (317301, 3173, 'Cengkareng'),
 (317302, 3173, 'Grogol Petamburan'),
 (317303, 3173, 'Taman Sari'),
@@ -137,7 +155,9 @@ INSERT INTO districts (id, sub_area_id, name) VALUES
 ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, sub_area_id = EXCLUDED.sub_area_id;
 
 -- Jakarta Timur
-INSERT INTO districts (id, sub_area_id, name) VALUES
+INSERT INTO districts (id, sub_area_id, name) 
+OVERRIDING SYSTEM VALUE 
+VALUES
 (317501, 3175, 'Pasar Rebo'),
 (317502, 3175, 'Ciracas'),
 (317503, 3175, 'Cipayung'),
@@ -151,7 +171,9 @@ INSERT INTO districts (id, sub_area_id, name) VALUES
 ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, sub_area_id = EXCLUDED.sub_area_id;
 
 -- Jakarta Utara
-INSERT INTO districts (id, sub_area_id, name) VALUES
+INSERT INTO districts (id, sub_area_id, name) 
+OVERRIDING SYSTEM VALUE 
+VALUES
 (317201, 3172, 'Penjaringan'),
 (317202, 3172, 'Pademangan'),
 (317203, 3172, 'Tanjung Priok'),
