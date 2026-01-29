@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useMasterData } from '../context/MasterDataContext';
+import { formatCurrency } from '../utils/currency';
 import {
     Search,
     Plus,
@@ -398,7 +399,7 @@ export default function Prospects() {
                                             onChange={(e) => setFormData({ ...formData, productId: e.target.value })}
                                         >
                                             <option value="">Select Package...</option>
-                                            {masterProducts.map(p => <option key={p.id} value={p.id}>{p.name} - {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(p.price)}</option>)}
+                                            {masterProducts.map(p => <option key={p.id} value={p.id}>{p.name} - {formatCurrency(p.price)}</option>)}
                                         </select>
                                     </div>
                                 </div>

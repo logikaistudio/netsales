@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useMasterData } from '../../context/MasterDataContext';
+import { formatCurrency } from '../../utils/currency';
 import {
     Tag,
     Plus,
@@ -23,8 +24,6 @@ export default function Promos() {
             setDiscount('');
         }
     };
-
-    const formatCurrency = (val) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(val);
 
     return (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">

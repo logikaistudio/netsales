@@ -1,4 +1,5 @@
 import React from 'react';
+import { formatCurrency } from '../utils/currency';
 import {
     AreaChart,
     Area,
@@ -164,7 +165,7 @@ export default function Dashboard() {
                                 <div className="flex justify-between items-center mb-2">
                                     <span className="font-medium text-sm">{area.name}</span>
                                     <span className="text-sm font-bold text-foreground">
-                                        {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(area.revenue)}
+                                        {formatCurrency(area.revenue)}
                                     </span>
                                 </div>
                                 <div className="h-2 w-full bg-secondary rounded-full overflow-hidden">

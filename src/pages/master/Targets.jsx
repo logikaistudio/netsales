@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useMasterData } from '../../context/MasterDataContext';
 import { supabase } from '../../lib/supabaseClient';
+import { formatCurrency } from '../../utils/currency';
 import {
     Target,
     Map,
@@ -51,7 +52,7 @@ export default function Targets() {
 
     const timeDivisor = getTimeDivisor(selectedTimeframe);
 
-    const formatNumber = (num) => new Intl.NumberFormat('en-US').format(Math.round(num || 0));
+    const formatNumber = formatCurrency; // Use currency formatter
 
     // --- Data Sync ---
 
