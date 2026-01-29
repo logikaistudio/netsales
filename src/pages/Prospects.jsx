@@ -9,8 +9,12 @@ import {
     X,
     MapPin,
     Phone,
-    Package,
-    ChevronDown
+    ChevronDown,
+    Trash2,
+    Edit2,
+    Calendar,
+    Upload,
+    PenTool
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -29,15 +33,24 @@ const statusColors = {
 };
 
 const initialData = [
-    { id: 1, name: 'Budi Santoso', address: 'Jl. Merdeka No. 10, Surabaya', package: 'Home 50Mbps', status: 'Activation', date: '2025-10-12', phone: '081234567890' },
-    { id: 2, name: 'Siti Aminah', address: 'Perum. Graha Indah Blok A2', package: 'Home 100Mbps', status: 'New', date: '2025-10-14', phone: '081298765432' },
-    { id: 3, name: 'PT. Maju Mundur', address: 'Ruko Business Park C5', package: 'Bisnis 300Mbps', status: 'Survey', date: '2025-10-14', phone: '081345678901' },
-    { id: 4, name: 'Ahmad Dani', address: 'Jl. Pahlawan 45', package: 'Home 20Mbps', status: 'Billing', date: '2025-09-20', phone: '081987654321' },
-    { id: 5, name: 'Cafe Kopi Senja', address: 'Jl. Tunjungan 12', package: 'Bisnis 100Mbps', status: 'Installation', date: '2025-10-13', phone: '081567890123' },
+    {
+        id: 1,
+        name: 'Budi Santoso',
+        address: 'Jl. Merdeka No. 10, Surabaya',
+        package: 'Home 50Mbps',
+        status: 'Activation',
+        date: '2025-10-12',
+        phones: ['081234567890'],
+        emails: ['budi@gmail.com'],
+        area: 'Jabodetabek'
+    },
+    // ... other data can be mapped similarly
 ];
 
 const packages = ['Home 20Mbps', 'Home 50Mbps', 'Home 100Mbps', 'Bisnis 100Mbps', 'Bisnis 300Mbps'];
 const statuses = ['New', 'Survey', 'Installation', 'Activation', 'Billing', 'Churn'];
+const areas = ['Jabodetabek', 'Sumut'];
+const customerTypes = ['Broadband Home', 'Broadband Business', 'Corporate'];
 
 export default function Prospects() {
     const [data, setData] = useState(initialData);
@@ -45,21 +58,30 @@ export default function Prospects() {
     const [statusFilter, setStatusFilter] = useState('All');
     const [showModal, setShowModal] = useState(false);
     const [editingItem, setEditingItem] = useState(null);
-    const [showStatusMenu, setShowStatusMenu] = useState(null); // id of current open menu
+    const [showStatusMenu, setShowStatusMenu] = useState(null);
 
     // Form State
     const [formData, setFormData] = useState({
+        customerType: 'Broadband Home',
+        rfsDate: '',
+        area: 'Jabodetabek',
+        plan: '',
         name: '',
-        phone: '',
+        kabupaten: '',
+        kecamatan: '',
+        kelurahan: '',
         address: '',
-        package: 'Home 50Mbps',
+        phones: [],
+        emails: [],
         status: 'New'
     });
 
+    const [newPhone, setNewPhone] = useState('');
+    const [newEmail, setNewEmail] = useState('');
+
     const filteredData = data.filter(item => {
         const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            item.address.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            item.phone.includes(searchTerm);
+            item.address.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesStatus = statusFilter === 'All' || item.status === statusFilter;
         return matchesSearch && matchesStatus;
     });
@@ -67,14 +89,34 @@ export default function Prospects() {
     const handleOpenModal = (item = null) => {
         if (item) {
             setEditingItem(item);
-            setFormData(item);
+            setFormData({
+                customerType: item.customerType || 'Broadband Home',
+                rfsDate: item.date || new Date().toISOString().split('T')[0],
+                area: item.area || 'Jabodetabek',
+                plan: item.package || '',
+                name: item.name || '',
+                kabupaten: '',
+                kecamatan: '',
+                kelurahan: '',
+                address: item.address || '',
+                phones: item.phones || [item.phone], // fallback
+                emails: item.emails || [],
+                status: item.status || 'New'
+            });
         } else {
             setEditingItem(null);
             setFormData({
+                customerType: 'Broadband Home',
+                rfsDate: new Date().toISOString().split('T')[0],
+                area: 'Jabodetabek',
+                plan: '',
                 name: '',
-                phone: '',
+                kabupaten: '',
+                kecamatan: '',
+                kelurahan: '',
                 address: '',
-                package: 'Home 50Mbps',
+                phones: [],
+                emails: [],
                 status: 'New'
             });
         }
@@ -85,11 +127,18 @@ export default function Prospects() {
         e.preventDefault();
         const now = new Date().toISOString().split('T')[0];
 
+        const saveData = {
+            ...formData,
+            id: editingItem ? editingItem.id : Math.max(...data.map(i => i.id || 0), 0) + 1,
+            date: formData.rfsDate,
+            package: formData.plan,
+            phone: formData.phones[0] || '-' // simple fallback for list view
+        };
+
         if (editingItem) {
-            setData(data.map(item => item.id === editingItem.id ? { ...formData, id: item.id, date: item.date } : item));
+            setData(data.map(item => item.id === editingItem.id ? saveData : item));
         } else {
-            const newId = Math.max(...data.map(i => i.id), 0) + 1;
-            setData([...data, { ...formData, id: newId, date: now }]);
+            setData([...data, saveData]);
         }
         setShowModal(false);
     };
@@ -99,8 +148,31 @@ export default function Prospects() {
         setShowStatusMenu(null);
     };
 
+    const addPhone = () => {
+        if (newPhone) {
+            setFormData({ ...formData, phones: [...formData.phones, newPhone] });
+            setNewPhone('');
+        }
+    };
+
+    const removePhone = (idx) => {
+        setFormData({ ...formData, phones: formData.phones.filter((_, i) => i !== idx) });
+    };
+
+    const addEmail = () => {
+        if (newEmail) {
+            setFormData({ ...formData, emails: [...formData.emails, newEmail] });
+            setNewEmail('');
+        }
+    };
+
+    const removeEmail = (idx) => {
+        setFormData({ ...formData, emails: formData.emails.filter((_, i) => i !== idx) });
+    };
+
     return (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 relative min-h-screen">
+            {/* Header & Filters (Same as before) */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
                     <h1 className="text-2xl font-bold tracking-tight">Prospek & Sales</h1>
@@ -176,13 +248,13 @@ export default function Prospects() {
                                                 </div>
                                                 <div className="flex items-center gap-1 text-muted-foreground text-xs mt-0.5">
                                                     <Phone size={12} />
-                                                    {item.phone}
+                                                    {item.phones?.[0] || item.phone}
                                                 </div>
                                             </div>
                                         </td>
                                         <td className="px-6 py-4">
                                             <span className="font-medium text-foreground bg-secondary px-2 py-1 rounded-lg text-xs">
-                                                {item.package}
+                                                {item.package || item.plan}
                                             </span>
                                         </td>
                                         <td className="px-6 py-4">
@@ -251,89 +323,253 @@ export default function Prospects() {
                 </div>
             </div>
 
-            {/* Modal Form */}
+            {/* Expanded Modal Form */}
             {showModal && (
                 <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
                     <div
                         className="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity"
                         onClick={() => setShowModal(false)}
                     />
-                    <div className="relative bg-card w-full max-w-lg rounded-3xl shadow-2xl border border-border p-6 animate-in fade-in zoom-in-95 duration-200">
+                    <div className="relative bg-card w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-3xl shadow-2xl border border-border p-8 animate-in fade-in zoom-in-95 duration-200">
+                        {/* Header */}
                         <div className="flex justify-between items-center mb-6">
-                            <div>
-                                <h2 className="text-xl font-bold">{editingItem ? 'Edit Prospect' : 'New Prospect'}</h2>
-                                <p className="text-sm text-muted-foreground">Fill in the details below.</p>
+                            <div className="flex items-center gap-2">
+                                <span className="text-orange-500 font-bold text-xl tracking-tight">Wiznet</span>
                             </div>
                             <button
                                 onClick={() => setShowModal(false)}
                                 className="p-2 hover:bg-secondary rounded-full text-muted-foreground hover:text-foreground transition-colors"
                             >
-                                <X size={20} />
+                                <X size={24} />
                             </button>
                         </div>
 
-                        <form onSubmit={handleSave} className="space-y-4">
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium text-foreground">Full Name</label>
-                                <input
-                                    required
-                                    type="text"
-                                    className="w-full px-4 py-2.5 bg-secondary/50 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
-                                    placeholder="e.g. Budi Santoso"
-                                    value={formData.name}
-                                    onChange={e => setFormData({ ...formData, name: e.target.value })}
-                                />
+                        <h2 className="text-2xl font-bold mb-8 text-foreground">New Prospect</h2>
+
+                        <form onSubmit={handleSave} className="space-y-6">
+                            {/* Row 1 */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium text-muted-foreground">Customer Type <span className="text-red-500">*</span></label>
+                                    <select
+                                        className="w-full px-4 py-2.5 bg-background border border-border rounded-lg focus:outline-none focus:ring-1 focus:ring-primary"
+                                        value={formData.customerType}
+                                        onChange={e => setFormData({ ...formData, customerType: e.target.value })}
+                                    >
+                                        {customerTypes.map(c => <option key={c} value={c}>{c}</option>)}
+                                    </select>
+                                </div>
+                                <div className="hidden md:block"></div> {/* Spacer for layout alignment */}
                             </div>
 
-                            <div className="grid grid-cols-2 gap-4">
+                            {/* Row 2 */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                 <div className="space-y-2">
-                                    <label className="text-sm font-medium text-foreground">Phone Number</label>
-                                    <input
-                                        required
-                                        type="tel"
-                                        className="w-full px-4 py-2.5 bg-secondary/50 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
-                                        placeholder="0812..."
-                                        value={formData.phone}
-                                        onChange={e => setFormData({ ...formData, phone: e.target.value })}
-                                    />
+                                    <label className="text-sm font-medium text-muted-foreground">RFS Date <span className="text-red-500">*</span></label>
+                                    <div className="relative">
+                                        <input
+                                            type="date"
+                                            className="w-full px-4 py-2.5 bg-background border border-border rounded-lg focus:outline-none focus:ring-1 focus:ring-primary"
+                                            value={formData.rfsDate}
+                                            onChange={e => setFormData({ ...formData, rfsDate: e.target.value })}
+                                        />
+                                        <Calendar className="absolute right-3 top-2.5 text-muted-foreground pointer-events-none" size={18} />
+                                    </div>
+                                </div>
+                                <div className="hidden md:block"></div>
+                            </div>
+
+                            {/* Row 3 */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium text-muted-foreground">Area <span className="text-red-500">*</span></label>
+                                    <select
+                                        className="w-full px-4 py-2.5 bg-background border border-border rounded-lg focus:outline-none focus:ring-1 focus:ring-primary"
+                                        value={formData.area}
+                                        onChange={e => setFormData({ ...formData, area: e.target.value })}
+                                    >
+                                        {areas.map(a => <option key={a} value={a}>{a}</option>)}
+                                    </select>
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="text-sm font-medium text-foreground">Package</label>
+                                    {/* Swapped order to match image somewhat, or just adjacent columns */}
+                                    <label className="text-sm font-medium text-muted-foreground">Plan <span className="text-red-500">*</span></label>
                                     <select
-                                        className="w-full px-4 py-2.5 bg-secondary/50 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all outline-none"
-                                        value={formData.package}
-                                        onChange={e => setFormData({ ...formData, package: e.target.value })}
+                                        className="w-full px-4 py-2.5 bg-background border border-border rounded-lg focus:outline-none focus:ring-1 focus:ring-primary"
+                                        value={formData.plan}
+                                        onChange={e => setFormData({ ...formData, plan: e.target.value })}
                                     >
+                                        <option value="">Select plan</option>
                                         {packages.map(p => <option key={p} value={p}>{p}</option>)}
                                     </select>
                                 </div>
                             </div>
 
+                            {/* Name */}
                             <div className="space-y-2">
-                                <label className="text-sm font-medium text-foreground">Address</label>
-                                <textarea
-                                    required
-                                    rows={3}
-                                    className="w-full px-4 py-2.5 bg-secondary/50 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all resize-none"
-                                    placeholder="Complete installation address..."
-                                    value={formData.address}
-                                    onChange={e => setFormData({ ...formData, address: e.target.value })}
+                                <label className="text-sm font-medium text-muted-foreground">Name <span className="text-red-500">*</span></label>
+                                <input
+                                    type="text"
+                                    className="w-full px-4 py-2.5 bg-background border border-border rounded-lg focus:outline-none focus:ring-1 focus:ring-primary"
+                                    value={formData.name}
+                                    onChange={e => setFormData({ ...formData, name: e.target.value })}
                                 />
                             </div>
 
-                            <div className="pt-4 flex justify-end gap-3">
+                            {/* Location Details */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                <div className="space-y-4">
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium text-muted-foreground">Kabupaten</label>
+                                        <select className="w-full px-4 py-2.5 bg-background border border-border rounded-lg focus:outline-none focus:ring-1 focus:ring-primary">
+                                            <option>KOTA CILEGON</option>
+                                        </select>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium text-muted-foreground">Kelurahan</label>
+                                        <select className="w-full px-4 py-2.5 bg-background border border-border rounded-lg focus:outline-none focus:ring-1 focus:ring-primary">
+                                            <option>Cibeber</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div className="space-y-4">
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium text-muted-foreground">Kecamatan</label>
+                                        <select className="w-full px-4 py-2.5 bg-background border border-border rounded-lg focus:outline-none focus:ring-1 focus:ring-primary">
+                                            <option>Cibeber</option>
+                                        </select>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium text-muted-foreground">Address <span className="text-red-500">*</span></label>
+                                        <textarea
+                                            rows={2}
+                                            className="w-full px-4 py-2.5 bg-background border border-border rounded-lg focus:outline-none focus:ring-1 focus:ring-primary resize-none"
+                                            value={formData.address}
+                                            onChange={e => setFormData({ ...formData, address: e.target.value })}
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Contacts: Phone & Email */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 border-t border-border pt-6">
+                                {/* Phone Section */}
+                                <div>
+                                    <div className="flex justify-between items-center mb-3">
+                                        <label className="text-sm font-medium text-foreground">Phone</label>
+                                        <div className="flex gap-2">
+                                            <input
+                                                type="text"
+                                                placeholder="Add phone..."
+                                                className="px-2 py-1 text-xs border rounded w-32"
+                                                value={newPhone}
+                                                onChange={e => setNewPhone(e.target.value)}
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={addPhone}
+                                                className="text-primary text-sm font-medium flex items-center gap-1 hover:underline"
+                                            >
+                                                <Plus size={16} /> Add
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div className="space-y-3 bg-secondary/30 p-4 rounded-xl">
+                                        {formData.phones.length === 0 && <p className="text-xs text-muted-foreground italic">No phones added.</p>}
+                                        {formData.phones.map((phone, idx) => (
+                                            <div key={idx} className="flex justify-between items-center bg-white p-2 rounded shadow-sm">
+                                                <span className="text-sm">{phone}</span>
+                                                <div className="flex gap-2 text-muted-foreground">
+                                                    <button type="button" className="hover:text-primary"><Edit2 size={14} /></button>
+                                                    <button type="button" onClick={() => removePhone(idx)} className="hover:text-red-500"><Trash2 size={14} /></button>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Email Section */}
+                                <div>
+                                    <div className="flex justify-between items-center mb-3">
+                                        <label className="text-sm font-medium text-foreground">Email</label>
+                                        <div className="flex gap-2">
+                                            <input
+                                                type="email"
+                                                placeholder="Add email..."
+                                                className="px-2 py-1 text-xs border rounded w-32"
+                                                value={newEmail}
+                                                onChange={e => setNewEmail(e.target.value)}
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={addEmail}
+                                                className="text-primary text-sm font-medium flex items-center gap-1 hover:underline"
+                                            >
+                                                <Plus size={16} /> Add
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div className="space-y-3 bg-secondary/30 p-4 rounded-xl">
+                                        {formData.emails.length === 0 && <p className="text-xs text-muted-foreground italic">No emails added.</p>}
+                                        {formData.emails.map((email, idx) => (
+                                            <div key={idx} className="flex justify-between items-center bg-white p-2 rounded shadow-sm">
+                                                <span className="text-sm">{email}</span>
+                                                <div className="flex gap-2 text-muted-foreground">
+                                                    <button type="button" className="hover:text-primary"><Edit2 size={14} /></button>
+                                                    <button type="button" onClick={() => removeEmail(idx)} className="hover:text-red-500"><Trash2 size={14} /></button>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Docs & Signature */}
+                            <div className="border-t border-border pt-6 space-y-6">
+                                <div>
+                                    <div className="flex justify-between items-center mb-2">
+                                        <label className="text-sm font-medium text-foreground">Documents (0)</label>
+                                        <button type="button" className="text-primary text-sm font-medium flex items-center gap-1 hover:underline">
+                                            <Plus size={16} /> Add
+                                        </button>
+                                    </div>
+                                    <div className="h-12 bg-secondary/30 rounded-lg flex items-center justify-center border border-dashed border-border text-xs text-muted-foreground">
+                                        No documents uploaded
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <div className="flex justify-between items-center mb-2">
+                                        <label className="text-sm font-medium text-foreground">Signature</label>
+                                        <button type="button" className="text-primary text-sm font-medium flex items-center gap-1 hover:underline">
+                                            <PenTool size={16} /> Open Pad
+                                        </button>
+                                    </div>
+                                    <div className="h-32 bg-secondary/30 rounded-lg flex items-center justify-center border border-dashed border-border">
+                                        {/* Signature Placeholder */}
+                                        <div className="text-center">
+                                            <svg className="mx-auto h-12 w-12 text-muted-foreground/50 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                            </svg>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Footer Actions - Matching the visual hidden save button logic or custom */}
+                            <div className="pt-6 border-t border-border flex justify-end gap-3 sticky bottom-0 bg-card z-10">
                                 <button
                                     type="button"
                                     onClick={() => setShowModal(false)}
-                                    className="px-5 py-2.5 rounded-xl border border-border font-medium hover:bg-secondary transition-colors"
+                                    className="px-6 py-2.5 rounded-lg border border-border font-medium hover:bg-secondary transition-colors"
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     type="submit"
-                                    className="px-5 py-2.5 rounded-xl bg-primary text-white font-medium hover:bg-blue-600 shadow-lg shadow-blue-500/20 transition-all active:scale-95"
+                                    className="px-6 py-2.5 rounded-lg bg-orange-500 text-white font-medium hover:bg-orange-600 shadow-lg shadow-orange-500/20 transition-all"
                                 >
-                                    {editingItem ? 'Save Changes' : 'Create Prospect'}
+                                    Save Prospect
                                 </button>
                             </div>
                         </form>
