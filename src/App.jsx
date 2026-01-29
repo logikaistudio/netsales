@@ -26,7 +26,7 @@ function App() {
             {/* Master Data Routes */}
             <Route path="/master" element={<MasterDataIndex />} />
             <Route path="/master/regional" element={<Regional />} />
-            <Route path="/master/districts" element={<Districts />} />
+            {/* <Route path="/master/districts" element={<Districts />} /> */}
             <Route path="/master/sales" element={<SalesTeam />} />
             <Route path="/master/products" element={<Products />} />
             <Route path="/master/promos" element={<Promos />} />

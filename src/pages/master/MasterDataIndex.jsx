@@ -42,15 +42,6 @@ export default function MasterDataIndex() {
             textColor: 'text-purple-600'
         },
         {
-            icon: LocateFixed,
-            title: 'Districts (Kecamatan)',
-            description: 'Manage district-level geographic data',
-            path: '/master/districts',
-            color: 'bg-orange-500',
-            lightColor: 'bg-orange-50',
-            textColor: 'text-orange-600'
-        },
-        {
             icon: ShoppingBag,
             title: 'Products',
             description: 'Product catalog, pricing, and COGS management',
