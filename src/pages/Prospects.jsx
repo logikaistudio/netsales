@@ -98,10 +98,14 @@ export default function Prospects() {
     const [newEmail, setNewEmail] = useState('');
 
     // --- Derived Data for Dropdowns ---
+    // Debug Filter Logic
+    // console.log('Filtering Districts for SubArea:', formData.subAreaId, 'Full List:', masterDistricts.length);
+
     const filteredSubAreas = masterSubAreas.filter(s => s.areaId == formData.areaId);
-    // If masterDistricts is empty, we might not see options. 
     const filteredDistricts = masterDistricts.filter(d => d.subAreaId == formData.subAreaId);
     const filteredSales = masterSales.filter(s => s.subAreaId == formData.subAreaId);
+
+    // console.log('Filtered Districts:', filteredDistricts.length);
 
     const filteredData = data.filter(item => {
         const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -468,7 +472,75 @@ export default function Prospects() {
                                 </div>
                             </section>
 
-                            {/* Section 3: Contacts */}
+                            {/* Section 3: Document Uploads */}
+                            <section className="space-y-4">
+                                <h3 className="text-sm font-bold text-primary uppercase tracking-wider flex items-center gap-2 border-b border-border pb-2">
+                                    <Upload size={16} /> Document Uploads
+                                </h3>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    {/* KTP Photo */}
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium text-muted-foreground">Foto KTP (JPEG/PDF)</label>
+                                        <div className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:bg-secondary/50 transition-colors cursor-pointer relative">
+                                            <input
+                                                type="file"
+                                                accept="image/jpeg,image/png,application/pdf"
+                                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                                onChange={(e) => console.log('KTP File:', e.target.files[0])}
+                                            />
+                                            <div className="flex flex-col items-center gap-2">
+                                                <div className="p-2 bg-primary/10 rounded-full text-primary">
+                                                    <Upload size={20} />
+                                                </div>
+                                                <span className="text-xs text-muted-foreground">Click to upload KTP</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Location Photo */}
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium text-muted-foreground">Foto Lokasi (JPEG)</label>
+                                        <div className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:bg-secondary/50 transition-colors cursor-pointer relative">
+                                            <input
+                                                type="file"
+                                                accept="image/jpeg,image/png"
+                                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                                onChange={(e) => console.log('Location File:', e.target.files[0])}
+                                            />
+                                            <div className="flex flex-col items-center gap-2">
+                                                <div className="p-2 bg-primary/10 rounded-full text-primary">
+                                                    <MapPin size={20} />
+                                                </div>
+                                                <span className="text-xs text-muted-foreground">Click to upload Location</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* House Photos (Multiple) */}
+                                    <div className="col-span-1 md:col-span-2 space-y-2">
+                                        <label className="text-sm font-medium text-muted-foreground">Foto Rumah (Max 3 Foto)</label>
+                                        <div className="border-2 border-dashed border-border rounded-lg p-8 text-center hover:bg-secondary/50 transition-colors cursor-pointer relative">
+                                            <input
+                                                type="file"
+                                                multiple
+                                                accept="image/jpeg,image/png"
+                                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                                onChange={(e) => console.log('House Files:', e.target.files)}
+                                            />
+                                            <div className="flex flex-col items-center gap-2">
+                                                <div className="p-2 bg-primary/10 rounded-full text-primary">
+                                                    <Upload size={24} />
+                                                </div>
+                                                <span className="text-sm text-foreground font-medium">Click to upload House Photos</span>
+                                                <span className="text-xs text-muted-foreground">Supports JPEG, PNG</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </section>
+
+                            {/* Section 4: Contacts */}
                             <section className="space-y-4">
                                 <h3 className="text-sm font-bold text-primary uppercase tracking-wider flex items-center gap-2 border-b border-border pb-2">
                                     <Phone size={16} /> Contacts
