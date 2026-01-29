@@ -58,7 +58,7 @@ export default function Layout({ children }) {
         { icon: LayoutDashboard, label: 'Dashboard', to: '/' },
         { icon: Users, label: 'Prospek & Sales', to: '/prospects' },
         { icon: Target, label: 'Target Achievement', to: '/targets' },
-        { icon: Database, label: 'Master Data', to: '/master' }, // Simply route to a master data landing or expanding menu
+        { icon: Database, label: 'Master Data', to: '/master' },
     ];
 
     return (

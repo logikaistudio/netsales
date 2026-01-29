@@ -6,19 +6,23 @@ import Prospects from './pages/Prospects';
 import Targets from './pages/Targets';
 import ProductMaster from './pages/ProductMaster';
 import Placeholder from './pages/Placeholder';
+import { MasterDataProvider } from './context/MasterDataContext';
+import MasterData from './pages/MasterData';
 
 function App() {
   return (
-    <BrowserRouter>
-      <Layout>
-        <Routes>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/prospects" element={<Prospects />} />
-          <Route path="/targets" element={<Targets />} />
-          <Route path="/master" element={<ProductMaster />} />
-        </Routes>
-      </Layout>
-    </BrowserRouter>
+    <MasterDataProvider>
+      <BrowserRouter>
+        <Layout>
+          <Routes>
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/prospects" element={<Prospects />} />
+            <Route path="/targets" element={<Targets />} />
+            <Route path="/master" element={<MasterData />} />
+          </Routes>
+        </Layout>
+      </BrowserRouter>
+    </MasterDataProvider>
   );
 }
 
