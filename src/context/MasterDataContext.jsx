@@ -1,96 +1,130 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { supabase } from '../lib/supabaseClient';
 
 const MasterDataContext = createContext();
 
-// Initial Data Seeds
-const INITIAL_AREAS = [
-    { id: 'area-1', name: 'Jabodetabek' },
-    { id: 'area-2', name: 'Sumatera Utara' }
-];
-
-const INITIAL_SUB_AREAS = [
-    { id: 'sub-1a', areaId: 'area-1', name: 'Jakarta Selatan' },
-    { id: 'sub-1b', areaId: 'area-1', name: 'Bekasi' },
-    { id: 'sub-1c', areaId: 'area-1', name: 'Depok' },
-    { id: 'sub-1d', areaId: 'area-1', name: 'Tangerang' },
-    { id: 'sub-2a', areaId: 'area-2', name: 'Medan Kota' },
-    { id: 'sub-2b', areaId: 'area-2', name: 'Binjai' }
-];
-
-const INITIAL_SALES_TEAM = [
-    { id: 'sales-1', name: 'Andi Saputra', subAreaId: 'sub-1a' },
-    { id: 'sales-2', name: 'Citra Kirana', subAreaId: 'sub-1b' },
-    { id: 'sales-3', name: 'Dodi Permana', subAreaId: 'sub-1c' },
-    { id: 'sales-4', name: 'Fani Amalia', subAreaId: 'sub-1d' },
-    { id: 'sales-5', name: 'Budi Hartono', subAreaId: 'sub-2a' },
-    { id: 'sales-6', name: 'Eka Wijaya', subAreaId: 'sub-2b' }
-];
-
 export function MasterDataProvider({ children }) {
-    // Load from localStorage or use initial data
-    const [areas, setAreas] = useState(() => {
-        const saved = localStorage.getItem('master_areas');
-        return saved ? JSON.parse(saved) : INITIAL_AREAS;
-    });
+    const [areas, setAreas] = useState([]);
+    const [subAreas, setSubAreas] = useState([]);
+    const [salesTeam, setSalesTeam] = useState([]);
+    const [loading, setLoading] = useState(true);
 
-    const [subAreas, setSubAreas] = useState(() => {
-        const saved = localStorage.getItem('master_subAreas');
-        return saved ? JSON.parse(saved) : INITIAL_SUB_AREAS;
-    });
-
-    const [salesTeam, setSalesTeam] = useState(() => {
-        const saved = localStorage.getItem('master_salesTeam');
-        return saved ? JSON.parse(saved) : INITIAL_SALES_TEAM;
-    });
-
-    // Persist to localStorage whenever data changes
+    // Fetch initial data
     useEffect(() => {
-        localStorage.setItem('master_areas', JSON.stringify(areas));
-    }, [areas]);
+        fetchMasterData();
+    }, []);
 
-    useEffect(() => {
-        localStorage.setItem('master_subAreas', JSON.stringify(subAreas));
-    }, [subAreas]);
+    const fetchMasterData = async () => {
+        setLoading(true);
+        try {
+            const { data: areasData } = await supabase.from('areas').select('*').order('id', { ascending: true });
+            const { data: subAreasData } = await supabase.from('sub_areas').select('*').order('id', { ascending: true });
+            const { data: salesData } = await supabase.from('sales_team').select('*').order('id', { ascending: true });
 
-    useEffect(() => {
-        localStorage.setItem('master_salesTeam', JSON.stringify(salesTeam));
-    }, [salesTeam]);
+            if (areasData) setAreas(areasData);
+            if (subAreasData) setSubAreas(subAreasData.map(s => ({ ...s, areaId: s.area_id }))); // Normalize key
+            if (salesData) setSalesTeam(salesData.map(s => ({ ...s, subAreaId: s.sub_area_id }))); // Normalize key
+        } catch (error) {
+            console.error('Error fetching data:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     // CRUD Operations
-    const addArea = (name) => {
-        const newArea = { id: `area-${Date.now()}`, name };
-        setAreas([...areas, newArea]);
+
+    const addArea = async (name) => {
+        try {
+            const { data, error } = await supabase
+                .from('areas')
+                .insert([{ name }])
+                .select()
+                .single();
+
+            if (data && !error) {
+                setAreas([...areas, data]);
+            }
+        } catch (error) {
+            console.error('Error adding area:', error);
+        }
     };
 
-    const deleteArea = (id) => {
-        setAreas(areas.filter(a => a.id !== id));
-        // Cleanup dependent subareas
-        setSubAreas(subAreas.filter(s => s.areaId !== id));
+    const deleteArea = async (id) => {
+        try {
+            const { error } = await supabase.from('areas').delete().eq('id', id);
+            if (!error) {
+                setAreas(areas.filter(a => a.id !== id));
+                setSubAreas(subAreas.filter(s => s.areaId !== id)); // Optimistic UI update
+            }
+        } catch (error) {
+            console.error('Error deleting area:', error);
+        }
     };
 
-    const addSubArea = (areaId, name) => {
-        const newSub = { id: `sub-${Date.now()}`, areaId, name };
-        setSubAreas([...subAreas, newSub]);
+    const addSubArea = async (areaId, name) => {
+        try {
+            const { data, error } = await supabase
+                .from('sub_areas')
+                .insert([{ area_id: areaId, name }])
+                .select()
+                .single();
+
+            if (data && !error) {
+                // Normalize response to match app state structure
+                const newSub = { ...data, areaId: data.area_id };
+                setSubAreas([...subAreas, newSub]);
+            }
+        } catch (error) {
+            console.error('Error adding sub area:', error);
+        }
     };
 
-    const deleteSubArea = (id) => {
-        setSubAreas(subAreas.filter(s => s.id !== id));
+    const deleteSubArea = async (id) => {
+        try {
+            const { error } = await supabase.from('sub_areas').delete().eq('id', id);
+            if (!error) {
+                setSubAreas(subAreas.filter(s => s.id !== id));
+            }
+        } catch (error) {
+            console.error('Error deleting sub area:', error);
+        }
     };
 
-    const addSales = (name, subAreaId) => {
-        const newSales = { id: `sales-${Date.now()}`, name, subAreaId };
-        setSalesTeam([...salesTeam, newSales]);
+    const addSales = async (name, subAreaId) => {
+        try {
+            const { data, error } = await supabase
+                .from('sales_team')
+                .insert([{ name, sub_area_id: subAreaId }])
+                .select()
+                .single();
+
+            if (data && !error) {
+                const newSales = { ...data, subAreaId: data.sub_area_id };
+                setSalesTeam([...salesTeam, newSales]);
+            }
+        } catch (error) {
+            console.error('Error adding sales:', error);
+        }
     };
 
-    const deleteSales = (id) => {
-        setSalesTeam(salesTeam.filter(s => s.id !== id));
+    const deleteSales = async (id) => {
+        try {
+            const { error } = await supabase.from('sales_team').delete().eq('id', id);
+            if (!error) {
+                setSalesTeam(salesTeam.filter(s => s.id !== id));
+            }
+        } catch (error) {
+            console.error('Error deleting sales:', error);
+        }
     };
 
     return (
         <MasterDataContext.Provider value={{
             areas, addArea, deleteArea,
             subAreas, addSubArea, deleteSubArea,
-            salesTeam, addSales, deleteSales // exposing salesTeam although not strictly requested for target allocation yet, good specific practice
+            salesTeam, addSales, deleteSales,
+            loading,
+            refreshData: fetchMasterData
         }}>
             {children}
         </MasterDataContext.Provider>

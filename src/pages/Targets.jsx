@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useMasterData } from '../context/MasterDataContext';
+import { supabase } from '../lib/supabaseClient';
 import {
     Target,
     Map,
@@ -8,7 +9,8 @@ import {
     Save,
     Briefcase,
     TrendingUp,
-    PieChart as PieChartIcon
+    PieChart as PieChartIcon,
+    RefreshCw
 } from 'lucide-react';
 import {
     PieChart,
@@ -22,76 +24,19 @@ import {
 const COLORS = ['#3b82f6', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#6366f1'];
 
 export default function Targets() {
-    const { areas: masterAreas, subAreas: masterSubAreas } = useMasterData();
+    const { areas: masterAreas, subAreas: masterSubAreas, loading: masterLoading } = useMasterData();
 
     // --- State Management ---
-    // We maintain a local state for targets, but the structure comes from Master Data
     const [areas, setAreas] = useState([]);
     const [selectedTimeframe, setSelectedTimeframe] = useState('yearly');
     const [expandedAreaId, setExpandedAreaId] = useState(null);
     const [isEditing, setIsEditing] = useState(false);
-
-    // Sync Master Data Structure with Local Target State
-    useEffect(() => {
-        // Load saved target values if any (to persist numbers when master data refreshes)
-        const savedTargets = JSON.parse(localStorage.getItem('target_values') || '{}');
-
-        const mergedAreas = masterAreas.map(ma => {
-            // Find existing target value or default
-            const savedArea = savedTargets[ma.id];
-            const areaTarget = savedArea?.target || 0; // Default 0 if new area
-
-            // Get subareas for this area
-            const releventSubs = masterSubAreas.filter(s => s.areaId === ma.id);
-
-            const mergedSubs = releventSubs.map(sub => {
-                const savedSub = savedArea?.subAreas?.find(s => s.id === sub.id);
-                return {
-                    id: sub.id,
-                    name: sub.name,
-                    percentage: savedSub ? savedSub.percentage : 0 // Default 0%
-                };
-            });
-
-            // Auto-distribute percentage if all are 0 (fresh init) to avoid NaN
-            if (mergedSubs.length > 0 && mergedSubs.every(s => s.percentage === 0)) {
-                const equalShare = Math.floor(100 / mergedSubs.length);
-                mergedSubs.forEach((s, idx) => {
-                    s.percentage = idx === mergedSubs.length - 1 ? (100 - (equalShare * (mergedSubs.length - 1))) : equalShare;
-                });
-            }
-
-            return {
-                id: ma.id,
-                name: ma.name,
-                target: areaTarget,
-                subAreas: mergedSubs
-            };
-        });
-
-        // Only update if structure length changed or first load to prevent loop, 
-        // ideally we should do deep comparison but for now this suffices for simple addition/removal
-        setAreas(mergedAreas);
-    }, [masterAreas, masterSubAreas]); // Re-run when master data changes
-
-    // Persist Targets whenever they change
-    useEffect(() => {
-        if (areas.length > 0) {
-            const targetsToSave = {};
-            areas.forEach(a => {
-                targetsToSave[a.id] = {
-                    target: a.target,
-                    subAreas: a.subAreas.map(s => ({ id: s.id, percentage: s.percentage }))
-                };
-            });
-            localStorage.setItem('target_values', JSON.stringify(targetsToSave));
-        }
-    }, [areas]);
-
+    const [isLoadingTargets, setIsLoadingTargets] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
 
     // --- Derived Calculations ---
 
-    const globalTarget = useMemo(() => areas.reduce((sum, area) => sum + area.target, 0), [areas]);
+    const globalTarget = useMemo(() => areas.reduce((sum, area) => sum + (area.target || 0), 0), [areas]);
 
     // Helper to get time divisor
     const getTimeDivisor = (tf) => {
@@ -106,18 +51,134 @@ export default function Targets() {
 
     const timeDivisor = getTimeDivisor(selectedTimeframe);
 
-    const formatNumber = (num) => new Intl.NumberFormat('id-ID').format(Math.round(num));
+    const formatNumber = (num) => new Intl.NumberFormat('id-ID').format(Math.round(num || 0));
+
+    // --- Data Sync ---
+
+    useEffect(() => {
+        if (!masterLoading && masterAreas.length > 0) {
+            fetchTargetsAndMerge();
+        }
+    }, [masterAreas, masterSubAreas, masterLoading]);
+
+    const fetchTargetsAndMerge = async () => {
+        setIsLoadingTargets(true);
+        try {
+            // Fetch targets for current year (2026 default)
+            const { data: targetData, error } = await supabase
+                .from('targets')
+                .select('*')
+                .eq('year', 2026);
+
+            if (error) throw error;
+
+            // Merge Master Data Structure with DB Target Values
+            const mergedAreas = masterAreas.map(ma => {
+                // Find target for this AREA
+                const areaTargetRecord = targetData?.find(t => t.entity_type === 'area' && t.entity_id === ma.id);
+                const areaTargetValue = areaTargetRecord ? Number(areaTargetRecord.target_value) : 0;
+
+                // Get SubAreas
+                const currentSubs = masterSubAreas.filter(s => s.areaId === ma.id);
+
+                // Calculate SubArea percentages
+                // If we store subarea absolutes in DB, we convert to % for UI, or simple store %? 
+                // Let's stick to the previous UI logic: SubAreas have % of Parent.
+                // BUT, to support "Edit Bottom Up", we might want to store Absolute Values for subareas too eventually.
+                // For now, let's keep SubAreas as derived percentages OR stored records if they exist.
+
+                const mergedSubs = currentSubs.map(sub => {
+                    const subTargetRecord = targetData?.find(t => t.entity_type === 'sub_area' && t.entity_id === sub.id);
+                    // If sub record exists, calculate its implied percentage relative to Area Target
+                    // If no record, default to 0
+                    const val = subTargetRecord ? Number(subTargetRecord.target_value) : 0;
+
+                    // If Area Target is 0, we can't really determine %, default 0
+                    const impliedPct = areaTargetValue > 0 ? (val / areaTargetValue) * 100 : 0;
+
+                    return {
+                        id: sub.id,
+                        name: sub.name,
+                        percentage: Math.round(impliedPct),
+                        absoluteValue: val // Keep absolute for saving back
+                    };
+                });
+
+                // Auto-distribute if fresh (all 0)
+                if (mergedSubs.length > 0 && mergedSubs.every(s => s.percentage === 0) && areaTargetValue > 0) {
+                    // If area has target but subs don't, unlikely but possible.
+                }
+
+                return {
+                    id: ma.id,
+                    name: ma.name,
+                    target: areaTargetValue,
+                    subAreas: mergedSubs
+                };
+            });
+
+            setAreas(mergedAreas);
+        } catch (err) {
+            console.error("Error fetching targets:", err);
+        } finally {
+            setIsLoadingTargets(false);
+        }
+    };
+
+    const saveTargetsToDB = async () => {
+        setIsSaving(true);
+        try {
+            const upsertData = [];
+
+            // Prepare Area Targets
+            areas.forEach(area => {
+                upsertData.push({
+                    entity_type: 'area',
+                    entity_id: area.id,
+                    target_value: area.target,
+                    year: 2026, // Defaulting for simple scope
+                    period_type: 'yearly'
+                });
+
+                // Prepare Sub Area Targets (calculated from %)
+                area.subAreas.forEach(sub => {
+                    const absVal = (area.target * (sub.percentage / 100));
+                    upsertData.push({
+                        entity_type: 'sub_area',
+                        entity_id: sub.id,
+                        target_value: absVal,
+                        year: 2026,
+                        period_type: 'yearly'
+                    });
+                });
+            });
+
+            // Upsert to Supabase
+            // Note: 'entity_type', 'entity_id', 'year' is UNIQUE constraint
+            const { error } = await supabase
+                .from('targets')
+                .upsert(upsertData, { onConflict: 'entity_type, entity_id, year' });
+
+            if (error) throw error;
+
+            setIsEditing(false);
+            // alert("Targets saved successfully!"); 
+        } catch (err) {
+            console.error("Error saving targets:", err);
+            alert("Failed to save targets");
+        } finally {
+            setIsSaving(false);
+        }
+    };
 
     // --- Handlers ---
 
     // 1. Edit Global Target (Top-Down Distribute)
     const handleGlobalTargetChange = (e) => {
         const newGlobalVal = parseInt(e.target.value.replace(/\D/g, '')) || 0;
-        // Convert displayed value (which might be monthly) back to Yearly basic
         const newYearlyGlobal = newGlobalVal * timeDivisor;
 
-        // Distribute proportionally
-        const oldGlobal = globalTarget === 0 ? 1 : globalTarget; // avoid div by 0
+        const oldGlobal = globalTarget === 0 ? 1 : globalTarget;
 
         setAreas(prev => prev.map(area => ({
             ...area,
@@ -174,6 +235,10 @@ export default function Targets() {
         </div>
     );
 
+    if (masterLoading || isLoadingTargets) {
+        return <div className="p-10 flex justify-center text-muted-foreground">Loading Data & Targets...</div>;
+    }
+
     return (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20">
             {/* Header Section */}
@@ -185,14 +250,24 @@ export default function Targets() {
                     </p>
                 </div>
                 <div className="flex gap-2">
-                    <button
-                        onClick={() => setIsEditing(!isEditing)}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${isEditing ? 'bg-primary/10 text-primary border border-primary/20' : 'bg-white border border-border hover:bg-secondary'
-                            }`}
-                    >
-                        {isEditing ? <Save size={16} /> : <Briefcase size={16} />}
-                        {isEditing ? 'Selesai Edit' : 'Edit Target'}
-                    </button>
+                    {isEditing ? (
+                        <button
+                            onClick={saveTargetsToDB}
+                            disabled={isSaving}
+                            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors shadow-sm disabled:opacity-50"
+                        >
+                            {isSaving ? <RefreshCw className="animate-spin" size={16} /> : <Save size={16} />}
+                            Simpan Perubahan
+                        </button>
+                    ) : (
+                        <button
+                            onClick={() => setIsEditing(true)}
+                            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-white border border-border hover:bg-secondary transition-colors"
+                        >
+                            <Briefcase size={16} />
+                            Edit Target
+                        </button>
+                    )}
                 </div>
             </div>
 
@@ -249,11 +324,13 @@ export default function Targets() {
                         </h3>
                     </div>
 
+                    {areas.length === 0 && <div className="p-8 text-center bg-secondary/10 rounded-xl border border-dashed border-border">Belum ada Area. Silakan tambah di menu Master Data.</div>}
+
                     {areas.map((area) => {
-                        const areaTargetPeriod = area.target / timeDivisor;
+                        const areaTargetPeriod = (area.target || 0) / timeDivisor;
                         const subAreaTotalPct = area.subAreas.reduce((acc, curr) => acc + curr.percentage, 0);
                         const isSubAreaValid = subAreaTotalPct === 100;
-                        const contributionPct = ((area.target / globalTarget) * 100).toFixed(1);
+                        const contributionPct = globalTarget > 0 ? ((area.target / globalTarget) * 100).toFixed(1) : 0;
 
                         return (
                             <div key={area.id} className={`bg-card border rounded-xl overflow-hidden transition-all duration-300 ${expandedAreaId === area.id ? 'ring-2 ring-primary/20 shadow-lg' : 'border-border/50 hover:border-primary/30'}`}>
@@ -302,9 +379,6 @@ export default function Targets() {
                                             <h5 className="text-sm font-semibold text-muted-foreground flex items-center gap-1">
                                                 <Users size={14} /> Breakdown Kecamatan (% dari Target Area)
                                             </h5>
-                                            {!isSubAreaValid && (
-                                                <span className="text-[10px] text-red-500 font-medium bg-red-50 px-2 py-0.5 rounded">Total Alokasi: {subAreaTotalPct}% (Harus 100%)</span>
-                                            )}
                                         </div>
 
                                         <div className="space-y-2">
@@ -345,6 +419,7 @@ export default function Targets() {
                                                     </div>
                                                 );
                                             })}
+                                            {area.subAreas.length === 0 && <p className="text-sm text-muted-foreground italic">Belum ada kecamatan di area ini.</p>}
                                         </div>
                                     </div>
                                 )}
@@ -404,7 +479,7 @@ export default function Targets() {
                             {areas.map(area => (
                                 <div key={area.id} className="flex justify-between text-sm">
                                     <span className="text-muted-foreground">{area.name}</span>
-                                    <span className="font-medium text-foreground">{formatNumber(area.target / timeDivisor)}</span>
+                                    <span className="font-medium text-foreground">{formatNumber((area.target || 0) / timeDivisor)}</span>
                                 </div>
                             ))}
                         </div>
