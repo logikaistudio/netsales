@@ -138,6 +138,20 @@ export default function Targets() {
                 <div className="flex gap-3">
                     {isEditing ? (
                         <>
+                            <div className="flex items-center gap-1 bg-secondary/30 p-1 rounded-lg mr-2">
+                                <button
+                                    onClick={() => setTargetInputMode('value')}
+                                    className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${targetInputMode === 'value' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+                                >
+                                    Value
+                                </button>
+                                <button
+                                    onClick={() => setTargetInputMode('percent')}
+                                    className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${targetInputMode === 'percent' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+                                >
+                                    Percent (%)
+                                </button>
+                            </div>
                             <button
                                 onClick={() => setIsEditing(false)}
                                 disabled={isSaving}
@@ -232,64 +246,93 @@ export default function Targets() {
                                         <tr>
                                             <th className="px-6 py-4 font-medium w-[40%] pl-8">City / District Segment</th>
                                             <th className="px-6 py-4 font-medium text-right w-[25%]">Homepass Capacity (HP)</th>
-                                            <th className="px-6 py-4 font-medium text-right w-[25%]">Sales Target (HP)</th>
+                                            <th className="px-6 py-4 font-medium text-right w-[25%]">
+                                                Sales Target
+                                                {isEditing && (
+                                                    <span className="ml-2 text-xs font-normal text-muted-foreground bg-white/50 px-2 py-0.5 rounded">
+                                                        Input: {targetInputMode === 'value' ? 'Values' : '% of HP'}
+                                                    </span>
+                                                )}
+                                            </th>
                                             {isEditing && <th className="px-6 py-4 w-[10%]"></th>}
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-border/50">
-                                        {area.cities.map(city => (
-                                            <tr key={city.id} className="hover:bg-secondary/5 transition-colors group/row">
-                                                <td className="px-6 py-4 pl-8">
-                                                    <div className="flex items-center gap-3">
-                                                        <MapPin size={16} className="text-muted-foreground opacity-50 group-hover/row:opacity-100 transition-opacity" />
-                                                        <span className="font-medium text-foreground">{city.name}</span>
-                                                    </div>
-                                                </td>
-                                                <td className="px-6 py-4 text-right">
-                                                    {isEditing ? (
-                                                        <div className="relative">
-                                                            <input
-                                                                type="text"
-                                                                className="w-full text-right bg-background border border-input rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-medium"
-                                                                value={city.occupancy || ''}
-                                                                onChange={(e) => handleInputChange(city.id, 'occupancy', e.target.value)}
-                                                                placeholder="0"
-                                                            />
-                                                            <span className="absolute right-8 top-2.5 text-xs text-muted-foreground pointer-events-none hidden">HP</span>
+                                        {area.cities.map(city => {
+                                            const occupancy = parseInt(city.occupancy) || 0;
+                                            const target = parseInt(city.target) || 0;
+                                            const percent = occupancy > 0 ? ((target / occupancy) * 100).toFixed(1) : '0.0';
+
+                                            return (
+                                                <tr key={city.id} className="hover:bg-secondary/5 transition-colors group/row">
+                                                    <td className="px-6 py-4 pl-8">
+                                                        <div className="flex items-center gap-3">
+                                                            <MapPin size={16} className="text-muted-foreground opacity-50 group-hover/row:opacity-100 transition-opacity" />
+                                                            <span className="font-medium text-foreground">{city.name}</span>
                                                         </div>
-                                                    ) : (
-                                                        <span className="font-medium text-muted-foreground bg-secondary/30 px-3 py-1 rounded-lg">
-                                                            {(city.occupancy || 0).toLocaleString()} HP
-                                                        </span>
-                                                    )}
-                                                </td>
-                                                <td className="px-6 py-4 text-right">
-                                                    {isEditing ? (
-                                                        <input
-                                                            type="text"
-                                                            className="w-full text-right bg-background border border-input rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-bold text-primary"
-                                                            value={city.target || ''}
-                                                            onChange={(e) => handleInputChange(city.id, 'target', e.target.value)}
-                                                            placeholder="0"
-                                                        />
-                                                    ) : (
-                                                        <span className="font-bold text-primary bg-primary/5 px-3 py-1 rounded-lg">
-                                                            {(city.target || 0).toLocaleString()} HP
-                                                        </span>
-                                                    )}
-                                                </td>
-                                                {isEditing && (
-                                                    <td className="px-6 py-4 text-center">
-                                                        <button
-                                                            onClick={() => handleDeleteCity(city.id)}
-                                                            className="p-2 text-muted-foreground hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                                        >
-                                                            <Trash2 size={16} />
-                                                        </button>
                                                     </td>
-                                                )}
-                                            </tr>
-                                        ))}
+                                                    <td className="px-6 py-4 text-right">
+                                                        {isEditing ? (
+                                                            <div className="relative">
+                                                                <input
+                                                                    type="text"
+                                                                    className="w-full text-right bg-background border border-input rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-medium"
+                                                                    value={city.occupancy || ''}
+                                                                    onChange={(e) => handleInputChange(city.id, 'occupancy', e.target.value)}
+                                                                    placeholder="0"
+                                                                />
+                                                            </div>
+                                                        ) : (
+                                                            <span className="font-medium text-muted-foreground bg-secondary/30 px-3 py-1 rounded-lg">
+                                                                {occupancy.toLocaleString()} HP
+                                                            </span>
+                                                        )}
+                                                    </td>
+                                                    <td className="px-6 py-4 text-right">
+                                                        {isEditing ? (
+                                                            <div className="relative group/input">
+                                                                <input
+                                                                    type="text"
+                                                                    className="w-full text-right bg-background border border-input rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-bold text-primary"
+                                                                    value={targetInputMode === 'value' ? (city.target || '') : (parseFloat(percent) || '')}
+                                                                    onChange={(e) => handleTargetChange(city.id, e.target.value, city.occupancy)}
+                                                                    placeholder="0"
+                                                                />
+                                                                <span className="absolute right-8 top-2.5 text-xs text-muted-foreground pointer-events-none opacity-50">
+                                                                    {targetInputMode === 'value' ? 'HP' : '%'}
+                                                                </span>
+
+                                                                {/* Helper Tooltip to show the OTHER value */}
+                                                                <div className="absolute right-0 -top-8 bg-black text-white text-xs px-2 py-1 rounded opacity-0 group-hover/input:opacity-100 transition-opacity pointer-events-none">
+                                                                    {targetInputMode === 'value'
+                                                                        ? `${percent}%`
+                                                                        : `${target} HP`
+                                                                    }
+                                                                </div>
+                                                            </div>
+                                                        ) : (
+                                                            <div className="flex flex-col items-end">
+                                                                <span className="font-bold text-primary bg-primary/5 px-3 py-1 rounded-lg">
+                                                                    {target.toLocaleString()} HP
+                                                                </span>
+                                                                <span className="text-xs text-muted-foreground mt-1">
+                                                                    {percent}% of Capacity
+                                                                </span>
+                                                            </div>
+                                                        )}
+                                                    </td>
+                                                    {isEditing && (
+                                                        <td className="px-6 py-4 text-center">
+                                                            <button
+                                                                onClick={() => handleDeleteCity(city.id)}
+                                                                className="p-2 text-muted-foreground hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                                            >
+                                                                <Trash2 size={16} />
+                                                            </button>
+                                                        </td>
+                                                    )}
+                                                </tr>
+                                            ))}
                                     </tbody>
 
                                     {/* Footer Add City Button */}
