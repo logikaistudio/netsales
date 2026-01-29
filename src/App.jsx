@@ -1,4 +1,3 @@
-```javascript
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Layout from './components/Layout';
@@ -23,7 +22,7 @@ function App() {
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/prospects" element={<Prospects />} />
-            
+
             {/* Master Data Routes */}
             <Route path="/master" element={<MasterDataIndex />} />
             <Route path="/master/regional" element={<Regional />} />
@@ -32,7 +31,7 @@ function App() {
             <Route path="/master/products" element={<Products />} />
             <Route path="/master/promos" element={<Promos />} />
             <Route path="/master/targets" element={<Targets />} />
-            
+
             {/* Legacy Redirects (if needed) */}
             <Route path="/targets" element={<Navigate to="/master/targets" replace />} />
           </Routes>
@@ -43,4 +42,3 @@ function App() {
 }
 
 export default App;
-```
