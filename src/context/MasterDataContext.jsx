@@ -115,11 +115,25 @@ export function MasterDataProvider({ children }) {
         } catch (error) { console.error('Error deleting promo:', error); }
     };
 
+    const addDistrict = async (subAreaId, name) => {
+        try {
+            const { data, error } = await supabase.from('districts').insert([{ sub_area_id: subAreaId, name }]).select().single();
+            if (data && !error) setDistricts([...districts, { ...data, subAreaId: data.sub_area_id }]);
+        } catch (error) { console.error('Error adding district:', error); }
+    };
+
+    const deleteDistrict = async (id) => {
+        try {
+            const { error } = await supabase.from('districts').delete().eq('id', id);
+            if (!error) setDistricts(districts.filter(d => d.id !== id));
+        } catch (error) { console.error('Error deleting district:', error); }
+    };
+
     return (
         <MasterDataContext.Provider value={{
             areas, addArea, deleteArea,
             subAreas, addSubArea, deleteSubArea,
-            districts,
+            districts, addDistrict, deleteDistrict,
             salesTeam, addSales, deleteSales,
             products, addProduct, deleteProduct,
             promos, addPromo, deletePromo,

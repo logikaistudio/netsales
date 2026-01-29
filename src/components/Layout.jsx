@@ -14,7 +14,8 @@ import {
     MapPin,
     UserCircle,
     Tag,
-    Map
+    Map,
+    LocateFixed
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -43,6 +44,7 @@ export default function Layout({ children }) {
                 { icon: Target, label: 'Target Achievement', to: '/master/targets' },
                 { icon: Users, label: 'Sales Team', to: '/master/sales' },
                 { icon: Map, label: 'Regional (Area/City)', to: '/master/regional' },
+                { icon: LocateFixed, label: 'Districts (Kecamatan)', to: '/master/districts' },
                 { icon: ShoppingBag, label: 'Products', to: '/master/products' },
                 { icon: Tag, label: 'Promos', to: '/master/promos' },
             ]
