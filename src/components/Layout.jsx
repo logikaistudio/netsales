@@ -39,7 +39,7 @@ export default function Layout({ children }) {
         {
             icon: Database,
             label: 'Master Data',
-            // No 'to' prop here, acts as a folder
+            to: '/master', // Make it clickable to go to index page
             children: [
                 { icon: Target, label: 'Target Achievement', to: '/master/targets' },
                 { icon: Users, label: 'Sales Team', to: '/master/sales' },

@@ -6,6 +6,7 @@ import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
 import Prospects from './pages/Prospects';
 // Master Data Pages
+import MasterDataIndex from './pages/master/MasterDataIndex';
 import Regional from './pages/master/Regional';
 import Districts from './pages/master/Districts';
 import SalesTeam from './pages/master/SalesTeam';
@@ -24,7 +25,7 @@ function App() {
             <Route path="/prospects" element={<Prospects />} />
             
             {/* Master Data Routes */}
-            <Route path="/master" element={<Navigate to="/master/regional" replace />} />
+            <Route path="/master" element={<MasterDataIndex />} />
             <Route path="/master/regional" element={<Regional />} />
             <Route path="/master/districts" element={<Districts />} />
             <Route path="/master/sales" element={<SalesTeam />} />
