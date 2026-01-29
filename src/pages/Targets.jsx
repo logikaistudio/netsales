@@ -1,13 +1,18 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
     Target,
-    TrendingUp,
-    Users,
-    Award,
     Map,
-    ArrowUpRight,
-    ArrowDownRight,
-    MoreHorizontal
+    Users,
+    ChevronRight,
+    ChevronDown,
+    Save,
+    RotateCcw,
+    Calendar,
+    Briefcase,
+    TrendingUp,
+    DollarSign,
+    PieChart as PieChartIcon,
+    BarChart3
 } from 'lucide-react';
 import {
     BarChart,
@@ -19,223 +24,377 @@ import {
     ResponsiveContainer,
     Cell,
     PieChart,
-    Pie
+    Pie,
+    Legend
 } from 'recharts';
 
-// Data Mockup
-const salesTeamData = [
-    { id: 1, name: 'Andi Saputra', area: 'Jabodetabek', sub_area: 'Jakarta Selatan', target: 50, actual: 65, achieved: 130, status: 'Exceed' },
-    { id: 2, name: 'Citra Kirana', area: 'Jabodetabek', sub_area: 'Bekasi', target: 40, actual: 38, achieved: 95, status: 'On Track' },
-    { id: 3, name: 'Dodi Permana', area: 'Jabodetabek', sub_area: 'Depok', target: 45, actual: 20, achieved: 44, status: 'Behind' },
-    { id: 4, name: 'Budi Hartono', area: 'Sumut', sub_area: 'Medan Kota', target: 45, actual: 50, achieved: 111, status: 'Exceed' },
-    { id: 5, name: 'Eka Wijaya', area: 'Sumut', sub_area: 'Binjai', target: 30, actual: 15, achieved: 50, status: 'Behind' },
-    { id: 6, name: 'Fani Amalia', area: 'Jabodetabek', sub_area: 'Tangerang', target: 40, actual: 42, achieved: 105, status: 'Exceed' },
+// --- Default Data & Constants ---
+const DEFAULT_GLOBAL_TARGET = 10000; // Default 10,000 Sales/Year
+
+// Struktur Awal Data Areas
+const INITIAL_AREAS = [
+    {
+        id: 'area-1',
+        name: 'Jabodetabek',
+        percentage: 60, // 60% of Global
+        subAreas: [ // Kecamatan / Sales Leader
+            { id: 'sub-1a', name: 'Jakarta Selatan (Andi)', percentage: 30 }, // 30% of Area Target
+            { id: 'sub-1b', name: 'Alfamart Bekasi (Citra)', percentage: 25 },
+            { id: 'sub-1c', name: 'Depok (Dodi)', percentage: 20 },
+            { id: 'sub-1d', name: 'Tangerang (Fani)', percentage: 25 },
+        ]
+    },
+    {
+        id: 'area-2',
+        name: 'Sumatera Utara',
+        percentage: 40, // 40% of Global
+        subAreas: [
+            { id: 'sub-2a', name: 'Medan Kota (Budi)', percentage: 60 },
+            { id: 'sub-2b', name: 'Binjai (Eka)', percentage: 40 },
+        ]
+    }
 ];
 
-const areaComparisonData = [
-    { name: 'Jabodetabek', target: 500, actual: 420 },
-    { name: 'Sumut', target: 200, actual: 185 },
-];
-
-const COLORS = ['#3b82f6', '#cbd5e1'];
-
-const ProgressCircle = ({ percentage, color = "text-primary" }) => {
-    const radius = 30;
-    const circumference = 2 * Math.PI * radius;
-    const strokeDashoffset = circumference - (percentage / 100) * circumference;
-
-    return (
-        <div className="relative w-20 h-20 flex items-center justify-center">
-            <svg className="transform -rotate-90 w-20 h-20">
-                <circle
-                    className="text-secondary"
-                    strokeWidth="6"
-                    stroke="currentColor"
-                    fill="transparent"
-                    r={radius}
-                    cx="40"
-                    cy="40"
-                />
-                <circle
-                    className={color}
-                    strokeWidth="6"
-                    strokeDasharray={circumference}
-                    strokeDashoffset={strokeDashoffset}
-                    strokeLinecap="round"
-                    stroke="currentColor"
-                    fill="transparent"
-                    r={radius}
-                    cx="40"
-                    cy="40"
-                />
-            </svg>
-            <span className={`absolute text-sm font-bold ${color}`}>{percentage}%</span>
-        </div>
-    );
-};
+const COLORS = ['#3b82f6', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#6366f1'];
 
 export default function Targets() {
-    const [filterArea, setFilterArea] = useState('All');
+    // --- State Management ---
+    const [globalTarget, setGlobalTarget] = useState(DEFAULT_GLOBAL_TARGET);
+    const [areas, setAreas] = useState(INITIAL_AREAS);
+    const [selectedTimeframe, setSelectedTimeframe] = useState('yearly'); // yearly, quarterly, monthly, weekly, daily
+    const [expandedAreaId, setExpandedAreaId] = useState(null);
+    const [isEditing, setIsEditing] = useState(false);
 
-    const filteredSales = filterArea === 'All'
-        ? salesTeamData
-        : salesTeamData.filter(s => s.area === filterArea);
+    // --- Derived Calculations ---
 
-    const totalTarget = filteredSales.reduce((acc, curr) => acc + curr.target, 0);
-    const totalActual = filteredSales.reduce((acc, curr) => acc + curr.actual, 0);
-    const totalPercentage = Math.round((totalActual / totalTarget) * 100);
+    // Total Percentage Check (Global -> Areas)
+    const totalAreaPercentage = useMemo(() => areas.reduce((sum, area) => sum + area.percentage, 0), [areas]);
+    const isAreaAllocationsValid = totalAreaPercentage === 100;
+
+    // Helper to get time divisor
+    const getTimeDivisor = (tf) => {
+        switch (tf) {
+            case 'quarterly': return 4;
+            case 'monthly': return 12;
+            case 'weekly': return 52;
+            case 'daily': return 365;
+            default: return 1;
+        }
+    };
+
+    const timeDivisor = getTimeDivisor(selectedTimeframe);
+
+    // --- Handlers ---
+
+    const handleGlobalTargetChange = (e) => {
+        const val = parseInt(e.target.value.replace(/\D/g, '')) || 0;
+        setGlobalTarget(val);
+    };
+
+    const updateAreaPercentage = (id, newPct) => {
+        setAreas(prev => prev.map(area =>
+            area.id === id ? { ...area, percentage: Math.min(100, Math.max(0, newPct)) } : area
+        ));
+    };
+
+    const updateSubAreaPercentage = (areaId, subId, newPct) => {
+        setAreas(prev => prev.map(area => {
+            if (area.id !== areaId) return area;
+            return {
+                ...area,
+                subAreas: area.subAreas.map(sub =>
+                    sub.id === subId ? { ...sub, percentage: Math.min(100, Math.max(0, newPct)) } : sub
+                )
+            };
+        }));
+    };
+
+    const toggleAreaExpand = (id) => {
+        setExpandedAreaId(expandedAreaId === id ? null : id);
+    };
+
+    const formatNumber = (num) => new Intl.NumberFormat('id-ID').format(Math.round(num));
+
+    // --- Render Components ---
+
+    const renderTimeframeTabs = () => (
+        <div className="flex p-1 bg-secondary/50 rounded-lg mb-6 w-full md:w-auto overflow-x-auto">
+            {[
+                { id: 'yearly', label: 'Tahunan' },
+                { id: 'quarterly', label: 'Per 3 Bulan' },
+                { id: 'monthly', label: 'Bulanan' },
+                { id: 'weekly', label: 'Mingguan' },
+                { id: 'daily', label: 'Harian' },
+            ].map(tf => (
+                <button
+                    key={tf.id}
+                    onClick={() => setSelectedTimeframe(tf.id)}
+                    className={`px-4 py-2 text-sm font-medium rounded-md whitespace-nowrap transition-all ${selectedTimeframe === tf.id
+                        ? 'bg-white text-primary shadow-sm'
+                        : 'text-muted-foreground hover:text-foreground hover:bg-white/50'
+                        }`}
+                >
+                    {tf.label}
+                </button>
+            ))}
+        </div>
+    );
 
     return (
-        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            {/* Header */}
+        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20">
+            {/* Header Section */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold tracking-tight">Target Achievement</h1>
-                    <p className="text-muted-foreground text-sm">Monitoring performa sales dan area (Jabodetabek & Sumut).</p>
+                    <h1 className="text-2xl font-bold tracking-tight">Target Achievement Planning</h1>
+                    <p className="text-muted-foreground text-sm">
+                        Atur distribusi target dari level Global hingga Kecamatan/Sales Leader.
+                    </p>
+                </div>
+                <div className="flex gap-2">
+                    <button
+                        onClick={() => setIsEditing(!isEditing)}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${isEditing ? 'bg-primary/10 text-primary border border-primary/20' : 'bg-white border border-border hover:bg-secondary'
+                            }`}
+                    >
+                        {isEditing ? <Save size={16} /> : <Briefcase size={16} />}
+                        {isEditing ? 'Selesai Edit' : 'Mode Edit'}
+                    </button>
+                </div>
+            </div>
+
+            {/* Global Target Configuration */}
+            <div className="bg-card border border-border/50 rounded-2xl p-6 shadow-sm">
+                <div className="flex flex-col md:flex-row items-center gap-6 justify-between">
+                    <div className="flex items-center gap-4 w-full md:w-auto">
+                        <div className="p-3 bg-blue-50 text-blue-600 rounded-xl">
+                            <Target size={32} />
+                        </div>
+                        <div>
+                            <p className="text-sm font-medium text-muted-foreground">Global Target (Tahun)</p>
+                            {isEditing ? (
+                                <div className="flex items-center gap-2 mt-1">
+                                    <input
+                                        type="text"
+                                        value={globalTarget}
+                                        onChange={handleGlobalTargetChange}
+                                        className="text-3xl font-bold bg-white border border-input rounded-lg px-2 py-1 w-48 focus:ring-2 focus:ring-primary outline-none"
+                                    />
+                                    <span className="text-sm text-muted-foreground">Unit</span>
+                                </div>
+                            ) : (
+                                <h2 className="text-3xl font-bold text-foreground">{formatNumber(globalTarget)} <span className="text-lg font-normal text-muted-foreground">Unit</span></h2>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Timeframe View */}
+                    <div className="w-full md:w-auto flex flex-col items-end">
+                        <p className="text-sm text-muted-foreground mb-2">Lihat Pecahan Target:</p>
+                        {renderTimeframeTabs()}
+                    </div>
                 </div>
 
-                <div className="bg-white p-1 rounded-xl shadow-sm border border-border flex gap-1">
-                    {['All', 'Jabodetabek', 'Sumut'].map(area => (
-                        <button
-                            key={area}
-                            onClick={() => setFilterArea(area)}
-                            className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${filterArea === area
-                                    ? 'bg-primary text-white shadow-md'
-                                    : 'text-muted-foreground hover:bg-secondary'
-                                }`}
-                        >
-                            {area}
-                        </button>
+                {/* Derived Global Stats based on Timeframe */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8 pt-6 border-t border-border/50">
+                    <div className="bg-secondary/30 p-4 rounded-xl">
+                        <p className="text-xs text-muted-foreground mb-1">Target {selectedTimeframe === 'daily' ? 'Hari Ini' : selectedTimeframe === 'weekly' ? 'Minggu Ini' : 'Periode Ini'}</p>
+                        <p className="text-xl font-bold text-primary">{formatNumber(globalTarget / timeDivisor)}</p>
+                    </div>
+                    {areas.map((area, idx) => (
+                        <div key={area.id} className="bg-secondary/10 p-4 rounded-xl border border-border/30">
+                            <div className="flex justify-between items-start mb-1">
+                                <p className="text-xs font-semibold text-muted-foreground">{area.name}</p>
+                                <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${isEditing ? 'bg-white border' : 'bg-secondary'}`}>
+                                    {area.percentage}%
+                                </span>
+                            </div>
+                            <p className="text-lg font-bold text-foreground">
+                                {formatNumber((globalTarget * (area.percentage / 100)) / timeDivisor)}
+                            </p>
+                        </div>
                     ))}
                 </div>
             </div>
 
-            {/* Stats Overview */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {/* Total Achievement Card */}
-                <div className="bg-card p-6 rounded-3xl shadow-sm border border-border/50 flex items-center justify-between relative overflow-hidden">
-                    <div className="z-10">
-                        <p className="text-muted-foreground font-medium text-sm mb-1">Total Achievement</p>
-                        <h3 className="text-3xl font-bold text-foreground">{totalPercentage}%</h3>
-                        <div className="flex items-center gap-2 mt-2 text-sm text-green-600 font-medium">
-                            <TrendingUp size={16} />
-                            <span>{new Intl.NumberFormat('id-ID').format(totalActual)} / {new Intl.NumberFormat('id-ID').format(totalTarget)} Sales</span>
-                        </div>
-                    </div>
-                    <div className="z-10">
-                        <ProgressCircle percentage={totalPercentage} />
-                    </div>
-                    <div className="absolute right-0 top-0 h-full w-1/3 bg-gradient-to-l from-primary/5 to-transparent pointer-events-none" />
-                </div>
+            {/* Main Content: Hierarchy Tree */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-                {/* Top Performer Card */}
-                <div className="bg-card p-6 rounded-3xl shadow-sm border border-border/50 relative overflow-hidden">
-                    <div className="flex justify-between items-start">
-                        <div>
-                            <p className="text-muted-foreground font-medium text-sm mb-1">Top Performer</p>
-                            <h3 className="text-xl font-bold text-foreground">Andi Saputra</h3>
-                            <p className="text-xs text-muted-foreground">Jakarta Selatan</p>
-                        </div>
-                        <div className="p-2 bg-yellow-100 text-yellow-600 rounded-lg">
-                            <Award size={24} />
-                        </div>
+                {/* Left Column: Distribution Hierarchy */}
+                <div className="lg:col-span-2 space-y-4">
+                    <div className="flex justify-between items-center mb-2">
+                        <h3 className="font-semibold text-lg flex items-center gap-2">
+                            <Map size={18} className="text-muted-foreground" />
+                            Distribusi Area & Wilayah
+                        </h3>
+                        {!isAreaAllocationsValid && (
+                            <span className="text-xs font-bold text-red-600 bg-red-50 px-2 py-1 rounded-md animate-pulse">
+                                Total Alokasi: {totalAreaPercentage}% (Harus 100%)
+                            </span>
+                        )}
                     </div>
-                    <div className="mt-4">
-                        <div className="flex justify-between text-sm mb-1">
-                            <span className="font-medium text-foreground">130% Achieved</span>
-                            <span className="text-muted-foreground">65 Sales</span>
-                        </div>
-                        <div className="w-full bg-secondary h-2 rounded-full overflow-hidden">
-                            <div className="bg-yellow-500 h-full rounded-full w-[100%]"></div>
-                        </div>
-                    </div>
-                </div>
 
-                {/* Area Comparison */}
-                <div className="bg-card p-6 rounded-3xl shadow-sm border border-border/50">
-                    <p className="text-muted-foreground font-medium text-sm mb-3">Area vs Target</p>
-                    <div className="bg-secondary/30 rounded-xl p-3">
-                        <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center gap-2 text-sm font-semibold">
-                                <span className="w-2 h-2 rounded-full bg-primary"></span>
-                                Jabodetabek
-                            </div>
-                            <span className="text-sm font-bold">84%</span>
-                        </div>
-                        <div className="w-full bg-secondary h-1.5 rounded-full overflow-hidden mb-4">
-                            <div className="bg-primary h-full rounded-full w-[84%]"></div>
-                        </div>
+                    {areas.map((area) => {
+                        const areaTarget = (globalTarget * (area.percentage / 100));
+                        const areaTargetPeriod = areaTarget / timeDivisor;
+                        const subAreaTotalPct = area.subAreas.reduce((acc, curr) => acc + curr.percentage, 0);
+                        const isSubAreaValid = subAreaTotalPct === 100;
 
-                        <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center gap-2 text-sm font-semibold">
-                                <span className="w-2 h-2 rounded-full bg-indigo-500"></span>
-                                Sumut
-                            </div>
-                            <span className="text-sm font-bold">92%</span>
-                        </div>
-                        <div className="w-full bg-secondary h-1.5 rounded-full overflow-hidden">
-                            <div className="bg-indigo-500 h-full rounded-full w-[92%]"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Sales Team Table */}
-            <div className="bg-card rounded-2xl border border-border/50 shadow-sm overflow-hidden">
-                <div className="p-6 border-b border-border/50 flex justify-between items-center">
-                    <h3 className="font-bold text-lg">Sales Team Rankings</h3>
-                    <button className="text-sm text-primary font-medium hover:underline">Download Report</button>
-                </div>
-                <div className="overflow-x-auto">
-                    <table className="w-full text-sm text-left">
-                        <thead className="bg-secondary/50 text-muted-foreground">
-                            <tr>
-                                <th className="px-6 py-4 font-medium">Sales Person</th>
-                                <th className="px-6 py-4 font-medium">Area</th>
-                                <th className="px-6 py-4 font-medium">Target</th>
-                                <th className="px-6 py-4 font-medium">Actual</th>
-                                <th className="px-6 py-4 font-medium">Achievement</th>
-                                <th className="px-6 py-4 font-medium">Status</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-border/50">
-                            {filteredSales.map((sales) => (
-                                <tr key={sales.id} className="group hover:bg-secondary/30 transition-colors">
-                                    <td className="px-6 py-4 font-medium text-foreground">
-                                        {sales.name}
-                                    </td>
-                                    <td className="px-6 py-4 text-muted-foreground">
-                                        {sales.sub_area} <span className="text-xs opacity-70">({sales.area})</span>
-                                    </td>
-                                    <td className="px-6 py-4 text-muted-foreground">
-                                        {sales.target}
-                                    </td>
-                                    <td className="px-6 py-4 font-bold text-foreground">
-                                        {sales.actual}
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <div className="flex items-center gap-2">
-                                            <span className="font-semibold">{sales.achieved}%</span>
-                                            <div className="w-16 h-1.5 bg-secondary rounded-full overflow-hidden">
-                                                <div
-                                                    className={`h-full rounded-full ${sales.achieved >= 100 ? 'bg-green-500' : sales.achieved >= 80 ? 'bg-primary' : 'bg-red-500'}`}
-                                                    style={{ width: `${Math.min(sales.achieved, 100)}%` }}
-                                                />
-                                            </div>
+                        return (
+                            <div key={area.id} className={`bg-card border rounded-xl overflow-hidden transition-all duration-300 ${expandedAreaId === area.id ? 'ring-2 ring-primary/20 shadow-lg' : 'border-border/50 hover:border-primary/30'}`}>
+                                {/* Area Header */}
+                                <div
+                                    className="p-4 flex items-center justify-between cursor-pointer bg-gradient-to-r from-transparent to-secondary/10"
+                                    onClick={() => toggleAreaExpand(area.id)}
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <div className={`p-1.5 rounded-md transition-transform duration-200 ${expandedAreaId === area.id ? 'bg-primary text-white rotate-90' : 'bg-secondary text-muted-foreground'}`}>
+                                            <ChevronRight size={16} />
                                         </div>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <span className={`px-2.5 py-1 rounded-full text-xs font-semibold border ${sales.status === 'Exceed' ? 'bg-green-50 text-green-700 border-green-200' :
-                                                sales.status === 'On Track' ? 'bg-blue-50 text-blue-700 border-blue-200' :
-                                                    'bg-red-50 text-red-700 border-red-200'
-                                            }`}>
-                                            {sales.status}
-                                        </span>
-                                    </td>
-                                </tr>
+                                        <div>
+                                            <h4 className="font-bold text-foreground">{area.name}</h4>
+                                            <p className="text-xs text-muted-foreground">
+                                                Target: <span className="font-semibold text-primary">{formatNumber(areaTargetPeriod)}</span> / {selectedTimeframe}
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-center gap-4" onClick={e => e.stopPropagation()}>
+                                        {isEditing && (
+                                            <div className="flex items-center gap-2 bg-white px-2 py-1 rounded-lg border border-input shadow-sm">
+                                                <span className="text-xs text-muted-foreground font-medium">Alokasi:</span>
+                                                <input
+                                                    type="number"
+                                                    min="0"
+                                                    max="100"
+                                                    className="w-12 text-right bg-transparent border-none p-0 text-sm font-bold focus:ring-0"
+                                                    value={area.percentage}
+                                                    onChange={(e) => updateAreaPercentage(area.id, parseInt(e.target.value) || 0)}
+                                                />
+                                                <span className="text-xs text-muted-foreground">%</span>
+                                            </div>
+                                        )}
+                                        {!isEditing && (
+                                            <div className="text-right">
+                                                <span className="text-lg font-bold text-foreground block">{area.percentage}%</span>
+                                                <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Kontribusi</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Expanded Sub-Area Content */}
+                                {expandedAreaId === area.id && (
+                                    <div className="border-t border-border/50 bg-secondary/5 p-4 animate-in slide-in-from-top-2 duration-200">
+                                        <div className="flex justify-between items-center mb-3">
+                                            <h5 className="text-sm font-semibold text-muted-foreground flex items-center gap-1">
+                                                <Users size={14} /> Breakdown per Sales Leader / Kecamatan
+                                            </h5>
+                                            {!isSubAreaValid && (
+                                                <span className="text-[10px] text-red-500 font-medium">Total: {subAreaTotalPct}% (Sesuaikan ke 100%)</span>
+                                            )}
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            {area.subAreas.map((sub) => {
+                                                const subTargetPeriod = (areaTarget * (sub.percentage / 100)) / timeDivisor;
+                                                return (
+                                                    <div key={sub.id} className="flex items-center justify-between p-3 bg-white border border-border/50 rounded-lg shadow-sm hover:shadow-md transition-shadow">
+                                                        <div className="flex flex-col">
+                                                            <span className="font-medium text-sm text-foreground">{sub.name}</span>
+                                                            <span className="text-xs text-muted-foreground">
+                                                                Target: <span className="font-bold text-blue-600">{formatNumber(subTargetPeriod)}</span>
+                                                            </span>
+                                                        </div>
+
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="w-24 h-1.5 bg-secondary rounded-full overflow-hidden hidden md:block">
+                                                                <div
+                                                                    className="h-full bg-blue-500 rounded-full"
+                                                                    style={{ width: `${sub.percentage}%` }}
+                                                                />
+                                                            </div>
+                                                            {isEditing ? (
+                                                                <div className="flex items-center border border-input rounded-md px-2 py-1 bg-gray-50">
+                                                                    <input
+                                                                        type="number"
+                                                                        className="w-10 text-right bg-transparent border-none p-0 text-sm font-semibold focus:ring-0"
+                                                                        value={sub.percentage}
+                                                                        onChange={(e) => updateSubAreaPercentage(area.id, sub.id, parseInt(e.target.value) || 0)}
+                                                                    />
+                                                                    <span className="text-xs text-muted-foreground ml-1">%</span>
+                                                                </div>
+                                                            ) : (
+                                                                <span className="font-bold text-sm bg-secondary px-2 py-1 rounded text-foreground">
+                                                                    {sub.percentage}%
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    })}
+                </div>
+
+                {/* Right Column: Visualization & Summary */}
+                <div className="space-y-6">
+                    {/* Distribution Pie Chart */}
+                    <div className="bg-card border border-border/50 rounded-2xl p-6 shadow-sm">
+                        <h3 className="font-semibold text-sm mb-4 flex items-center gap-2">
+                            <PieChartIcon size={16} />
+                            Proporsi Target Area
+                        </h3>
+                        <div className="h-[200px] w-full">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <PieChart>
+                                    <Pie
+                                        data={areas}
+                                        cx="50%"
+                                        cy="50%"
+                                        innerRadius={60}
+                                        outerRadius={80}
+                                        paddingAngle={5}
+                                        dataKey="percentage"
+                                        stroke="none"
+                                    >
+                                        {areas.map((entry, index) => (
+                                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                        ))}
+                                    </Pie>
+                                    <Tooltip
+                                        contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                                        formatter={(value) => `${value}%`}
+                                    />
+                                    <Legend verticalAlign="bottom" height={36} iconType="circle" />
+                                </PieChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </div>
+
+                    {/* Summary Card */}
+                    <div className="bg-gradient-to-br from-primary/5 to-primary/10 border border-primary/20 rounded-2xl p-6">
+                        <h3 className="font-semibold text-primary mb-2 flex items-center gap-2">
+                            <TrendingUp size={18} />
+                            Summary ({selectedTimeframe})
+                        </h3>
+                        <div className="space-y-3">
+                            <div className="flex justify-between text-sm">
+                                <span className="text-muted-foreground">Global Target</span>
+                                <span className="font-bold">{formatNumber(globalTarget / timeDivisor)}</span>
+                            </div>
+                            <div className="h-px bg-primary/20 my-2" />
+                            {areas.map(area => (
+                                <div key={area.id} className="flex justify-between text-sm">
+                                    <span className="text-muted-foreground">{area.name}</span>
+                                    <span className="font-medium">{formatNumber((globalTarget * (area.percentage / 100)) / timeDivisor)}</span>
+                                </div>
                             ))}
-                        </tbody>
-                    </table>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
