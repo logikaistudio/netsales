@@ -133,7 +133,7 @@ export default function Layout({ children }) {
             </aside>
 
             {/* Main Content */}
-            <main className="flex-1 min-w-0 flex flex-col h-screen overflow-hidden md:ml-64">
+            <main className="flex-1 min-w-0 flex flex-col h-screen overflow-hidden">
                 {/* Header */}
                 <header className="h-16 px-6 border-b border-border bg-card/50 backdrop-blur-xl flex items-center justify-between sticky top-0 z-30">
                     <button
