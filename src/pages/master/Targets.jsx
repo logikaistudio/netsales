@@ -41,9 +41,32 @@ export default function Targets() {
     // Initial Data Sync
     useEffect(() => {
         if (masterSubAreas.length > 0) {
-            setSubAreas(JSON.parse(JSON.stringify(masterSubAreas)));
+            // Initialize with UI Value populated for 'value' mode default
+            const initialized = JSON.parse(JSON.stringify(masterSubAreas)).map(item => ({
+                ...item,
+                uiInputValue: (item.target || 0).toString()
+            }));
+            setSubAreas(initialized);
         }
     }, [masterSubAreas]);
+
+    const switchInputMode = (mode) => {
+        setTargetInputMode(mode);
+        setSubAreas(prev => prev.map(item => {
+            const occupancy = parseInt(item.occupancy) || 0;
+            const target = parseInt(item.target) || 0;
+            let displayVal = '';
+
+            if (mode === 'value') {
+                displayVal = target.toString();
+            } else {
+                // Convert to percent for display
+                const pct = occupancy > 0 ? ((target / occupancy) * 100).toFixed(1) : '0';
+                displayVal = pct.endsWith('.0') ? pct.slice(0, -2) : pct;
+            }
+            return { ...item, uiInputValue: displayVal };
+        }));
+    };
 
     const handleInputChange = (id, field, value) => {
         setSubAreas(prev => prev.map(item => {
@@ -57,17 +80,28 @@ export default function Targets() {
     const handleTargetChange = (id, inputValue, occupancy) => {
         setSubAreas(prev => prev.map(item => {
             if (item.id === id) {
+                // 1. Update visual input immediately
+                const updatedItem = { ...item, uiInputValue: inputValue };
+
+                // 2. Calculate underlying target value
                 let newTarget = 0;
                 if (targetInputMode === 'value') {
-                    newTarget = inputValue;
+                    // Allow only numbers
+                    const val = inputValue.replace(/\D/g, '');
+                    newTarget = parseInt(val) || 0;
                 } else {
-                    // Percent Mode: Calculate absolute based on CURRENT occupancy
-                    // If occupancy is 0, target is 0.
+                    // Percent Mode: Allow decimals
                     const occ = parseInt(occupancy) || 0;
-                    const pct = parseFloat(inputValue) || 0;
-                    newTarget = Math.round((pct / 100) * occ);
+                    const pct = parseFloat(inputValue); // Don't fallback to 0 immediately to allow typing "0."
+
+                    if (!isNaN(pct)) {
+                        newTarget = Math.round((pct / 100) * occ);
+                    } else {
+                        newTarget = 0;
+                    }
                 }
-                return { ...item, target: newTarget };
+                updatedItem.target = newTarget;
+                return updatedItem;
             }
             return item;
         }));
@@ -161,13 +195,13 @@ export default function Targets() {
                         <>
                             <div className="flex items-center gap-1 bg-secondary/30 p-1 rounded-lg mr-2">
                                 <button
-                                    onClick={() => setTargetInputMode('value')}
+                                    onClick={() => switchInputMode('value')}
                                     className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${targetInputMode === 'value' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
                                 >
                                     Value
                                 </button>
                                 <button
-                                    onClick={() => setTargetInputMode('percent')}
+                                    onClick={() => switchInputMode('percent')}
                                     className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${targetInputMode === 'percent' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
                                 >
                                     Percent (%)
@@ -315,7 +349,7 @@ export default function Targets() {
                                                                 <input
                                                                     type="text"
                                                                     className="w-full text-right bg-background border border-input rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-bold text-primary"
-                                                                    value={targetInputMode === 'value' ? (city.target || '') : (parseFloat(percent) || '')}
+                                                                    value={city.uiInputValue !== undefined ? city.uiInputValue : (targetInputMode === 'value' ? city.target : parseFloat(percent))}
                                                                     onChange={(e) => handleTargetChange(city.id, e.target.value, city.occupancy)}
                                                                     placeholder="0"
                                                                 />
