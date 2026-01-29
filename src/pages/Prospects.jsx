@@ -99,14 +99,9 @@ export default function Prospects() {
     const [newEmail, setNewEmail] = useState('');
 
     // --- Derived Data for Dropdowns ---
-    // Debug Filter Logic
-    // console.log('Filtering Districts for SubArea:', formData.subAreaId, 'Full List:', masterDistricts.length);
-
     const filteredSubAreas = masterSubAreas.filter(s => s.areaId == formData.areaId);
     const filteredDistricts = masterDistricts.filter(d => d.subAreaId == formData.subAreaId);
     const filteredSales = masterSales.filter(s => s.subAreaId == formData.subAreaId);
-
-    // console.log('Filtered Districts:', filteredDistricts.length);
 
     const filteredData = data.filter(item => {
         const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -605,6 +600,7 @@ export default function Prospects() {
                     </div>
                 </div>
             )}
+            {/* Debug Info removed */}
         </div>
     );
 }
