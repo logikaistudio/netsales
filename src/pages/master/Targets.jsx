@@ -64,17 +64,23 @@ export default function Targets() {
     const handleInputChange = (id, field, value) => {
         setSubAreas(prev => prev.map(item => {
             if (item.id === id) {
-                // If occupancy changes, we might want to retain the PERCENTAGE and update the TARGET HP
-                // Or retain TARGET HP and update percentage?
-                // User asked for "Target is Percent", so if Occupancy changes, Percentage stays, Target HP updates.
-
                 const newItem = { ...item, [field]: value };
 
                 if (field === 'occupancy') {
-                    const newOcc = parseInt(value) || 0;
+                    // Sanitize input: remove non-numeric chars for calculation
+                    const rawValue = value.toString().replace(/\D/g, '');
+                    const newOcc = parseInt(rawValue) || 0;
+
                     // Use existing UI Percent to recalc target
                     const currentPct = parseFloat(newItem.uiInputValue) || 0;
                     newItem.target = Math.round((currentPct / 100) * newOcc);
+
+                    // Keep the formatted value in the field if needed, or raw?
+                    // Standard input usually keeps raw input until blur, but here we store string in occupancy
+                    // Let's store raw value or user input? 
+                    // Storing raw integer is safer for re-renders. 
+                    // But user input might have commas. Let's store plain integer in occupancy for now.
+                    newItem.occupancy = rawValue;
                 }
 
                 return newItem;
@@ -86,14 +92,18 @@ export default function Targets() {
     const handleTargetPercentChange = (id, inputValue) => {
         setSubAreas(prev => prev.map(item => {
             if (item.id === id) {
-                const occupancy = parseInt(item.occupancy) || 0;
+                // Ensure we use the numeric value of occupancy
+                const occupancyStr = (item.occupancy || '0').toString().replace(/\D/g, '');
+                const occupancy = parseInt(occupancyStr) || 0;
 
                 // 1. Update visual input immediately (Percent)
                 const updatedItem = { ...item, uiInputValue: inputValue };
 
-                // 2. Calculate underlying target value (HP)
+                // 2. Calculate underlying target value (HP) with float precision
                 let newTargetHP = 0;
-                const pct = parseFloat(inputValue);
+                // Replace comma with dot for Indonesian locale support if user types "50,5"
+                const normalizedInput = inputValue.replace(',', '.');
+                const pct = parseFloat(normalizedInput);
 
                 if (!isNaN(pct)) {
                     newTargetHP = Math.round((pct / 100) * occupancy);
@@ -234,8 +244,14 @@ export default function Targets() {
             <div className="grid grid-cols-1 gap-8">
                 {groupedData.map(area => {
                     // Calculate Summaries
-                    const totalHomepass = area.cities.reduce((acc, curr) => acc + (parseInt(curr.occupancy) || 0), 0);
-                    const totalTarget = area.cities.reduce((acc, curr) => acc + (parseInt(curr.target) || 0), 0);
+                    const totalHomepass = area.cities.reduce((acc, curr) => {
+                        const rawOcc = (curr.occupancy || '0').toString().replace(/\D/g, '');
+                        return acc + (parseInt(rawOcc) || 0);
+                    }, 0);
+
+                    const totalTarget = area.cities.reduce((acc, curr) => {
+                        return acc + (parseInt(curr.target) || 0);
+                    }, 0);
 
                     return (
                         <div key={area.id} className="group relative bg-card border border-border rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden">
