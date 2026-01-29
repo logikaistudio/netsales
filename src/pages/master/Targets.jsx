@@ -31,6 +31,8 @@ export default function Targets() {
     const [isEditing, setIsEditing] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
 
+    const [targetInputMode, setTargetInputMode] = useState('value'); // 'value' | 'percent'
+
     // Modal States
     const [showAddAreaModal, setShowAddAreaModal] = useState(false);
     const [showAddCityModal, setShowAddCityModal] = useState(null); // stores areaId
@@ -51,6 +53,25 @@ export default function Targets() {
             return item;
         }));
     };
+
+    const handleTargetChange = (id, inputValue, occupancy) => {
+        setSubAreas(prev => prev.map(item => {
+            if (item.id === id) {
+                let newTarget = 0;
+                if (targetInputMode === 'value') {
+                    newTarget = inputValue;
+                } else {
+                    // Percent Mode: Calculate absolute based on CURRENT occupancy
+                    // If occupancy is 0, target is 0.
+                    const occ = parseInt(occupancy) || 0;
+                    const pct = parseFloat(inputValue) || 0;
+                    newTarget = Math.round((pct / 100) * occ);
+                }
+                return { ...item, target: newTarget };
+            }
+            return item;
+        }));
+    }
 
     const saveChanges = async () => {
         setIsSaving(true);
