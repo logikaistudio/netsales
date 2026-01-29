@@ -91,7 +91,8 @@ export default function Prospects() {
 
         phones: [],
         emails: [],
-        status: 'New'
+        status: 'New',
+        locationType: 'Residential' // Default
     });
 
     const [newPhone, setNewPhone] = useState('');
@@ -382,7 +383,22 @@ export default function Prospects() {
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium text-muted-foreground">Location Type</label>
+                                        <select
+                                            className="w-full px-3 py-2 bg-background border border-border rounded-lg outline-none focus:ring-1 focus:ring-primary"
+                                            value={formData.locationType || 'Residential'}
+                                            onChange={(e) => setFormData({ ...formData, locationType: e.target.value })}
+                                        >
+                                            <option value="Residential">Residential</option>
+                                            <option value="Apartemen">Apartemen</option>
+                                            <option value="Open Area">Open Area</option>
+                                            <option value="Industrial Park">Industrial Park</option>
+                                            <option value="Office Park">Office Park</option>
+                                        </select>
+                                    </div>
+
                                     <div className="space-y-2">
                                         <label className="text-sm font-medium text-muted-foreground">Sales Person</label>
                                         <select
