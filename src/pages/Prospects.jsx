@@ -175,8 +175,8 @@ export default function Prospects() {
             {/* Header & Filters (Same as before) */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold tracking-tight">Prospek & Sales</h1>
-                    <p className="text-muted-foreground text-sm">Manage lifecycle pelanggan dari prospek hingga billing.</p>
+                    <h1 className="text-2xl font-bold tracking-tight">Prospects & Sales</h1>
+                    <p className="text-muted-foreground text-sm">Manage customer lifecycle from prospect to billing.</p>
                 </div>
                 <button
                     onClick={() => handleOpenModal()}
@@ -193,7 +193,7 @@ export default function Prospects() {
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
                     <input
                         type="text"
-                        placeholder="Cari nama, alamat, atau no HP..."
+                        placeholder="Search name, address, or phone..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         className="w-full pl-10 pr-4 py-2 bg-card border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
@@ -217,10 +217,10 @@ export default function Prospects() {
                     <table className="w-full text-sm text-left">
                         <thead className="bg-secondary/50 text-muted-foreground">
                             <tr>
-                                <th className="px-6 py-4 font-medium">Pelanggan</th>
-                                <th className="px-6 py-4 font-medium">Paket</th>
+                                <th className="px-6 py-4 font-medium">Customer</th>
+                                <th className="px-6 py-4 font-medium">Package</th>
                                 <th className="px-6 py-4 font-medium">Status</th>
-                                <th className="px-6 py-4 font-medium">Tanggal</th>
+                                <th className="px-6 py-4 font-medium">Date</th>
                                 <th className="px-6 py-4 font-medium text-right">Actions</th>
                             </tr>
                         </thead>
@@ -420,13 +420,13 @@ export default function Prospects() {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                 <div className="space-y-4">
                                     <div className="space-y-2">
-                                        <label className="text-sm font-medium text-muted-foreground">Kabupaten</label>
+                                        <label className="text-sm font-medium text-muted-foreground">City</label>
                                         <select className="w-full px-4 py-2.5 bg-background border border-border rounded-lg focus:outline-none focus:ring-1 focus:ring-primary">
                                             <option>KOTA CILEGON</option>
                                         </select>
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-sm font-medium text-muted-foreground">Kelurahan</label>
+                                        <label className="text-sm font-medium text-muted-foreground">Sub-District/Village</label>
                                         <select className="w-full px-4 py-2.5 bg-background border border-border rounded-lg focus:outline-none focus:ring-1 focus:ring-primary">
                                             <option>Cibeber</option>
                                         </select>
@@ -434,7 +434,7 @@ export default function Prospects() {
                                 </div>
                                 <div className="space-y-4">
                                     <div className="space-y-2">
-                                        <label className="text-sm font-medium text-muted-foreground">Kecamatan</label>
+                                        <label className="text-sm font-medium text-muted-foreground">District</label>
                                         <select className="w-full px-4 py-2.5 bg-background border border-border rounded-lg focus:outline-none focus:ring-1 focus:ring-primary">
                                             <option>Cibeber</option>
                                         </select>

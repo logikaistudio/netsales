@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { useMasterData } from '../context/MasterDataContext';
-import { supabase } from '../lib/supabaseClient';
+import { useMasterData } from '../../context/MasterDataContext';
+import { supabase } from '../../lib/supabaseClient';
 import {
     Target,
     Map,
@@ -51,7 +51,7 @@ export default function Targets() {
 
     const timeDivisor = getTimeDivisor(selectedTimeframe);
 
-    const formatNumber = (num) => new Intl.NumberFormat('id-ID').format(Math.round(num || 0));
+    const formatNumber = (num) => new Intl.NumberFormat('en-US').format(Math.round(num || 0));
 
     // --- Data Sync ---
 
@@ -215,11 +215,11 @@ export default function Targets() {
     const renderTimeframeTabs = () => (
         <div className="flex p-1 bg-secondary/50 rounded-lg mb-6 w-full md:w-auto overflow-x-auto">
             {[
-                { id: 'yearly', label: 'Tahunan' },
-                { id: 'quarterly', label: 'Per 3 Bulan' },
-                { id: 'monthly', label: 'Bulanan' },
-                { id: 'weekly', label: 'Mingguan' },
-                { id: 'daily', label: 'Harian' },
+                { id: 'yearly', label: 'Yearly' },
+                { id: 'quarterly', label: 'Quarterly' },
+                { id: 'monthly', label: 'Monthly' },
+                { id: 'weekly', label: 'Weekly' },
+                { id: 'daily', label: 'Daily' },
             ].map(tf => (
                 <button
                     key={tf.id}
@@ -236,7 +236,7 @@ export default function Targets() {
     );
 
     if (masterLoading || isLoadingTargets) {
-        return <div className="p-10 flex justify-center text-muted-foreground">Loading Data & Targets...</div>;
+        return <div className="p-10 flex justify-center text-muted-foreground">Loading Data...</div>;
     }
 
     return (
@@ -246,7 +246,7 @@ export default function Targets() {
                 <div>
                     <h1 className="text-2xl font-bold tracking-tight">Target Achievement Planning</h1>
                     <p className="text-muted-foreground text-sm">
-                        Total {selectedTimeframe === 'yearly' ? 'Tahun Ini' : selectedTimeframe === 'monthly' ? 'Bulan Ini' : 'Periode Ini'}: <span className="font-bold text-foreground">{formatNumber(globalTarget / timeDivisor)} Units</span>
+                        Total {selectedTimeframe === 'yearly' ? 'This Year' : selectedTimeframe === 'monthly' ? 'This Month' : 'This Period'}: <span className="font-bold text-foreground">{formatNumber(globalTarget / timeDivisor)} Units</span>
                     </p>
                 </div>
                 <div className="flex gap-2">
@@ -257,7 +257,7 @@ export default function Targets() {
                             className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors shadow-sm disabled:opacity-50"
                         >
                             {isSaving ? <RefreshCw className="animate-spin" size={16} /> : <Save size={16} />}
-                            Simpan Perubahan
+                            Save Changes
                         </button>
                     ) : (
                         <button
@@ -265,7 +265,7 @@ export default function Targets() {
                             className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-white border border-border hover:bg-secondary transition-colors"
                         >
                             <Briefcase size={16} />
-                            Edit Target
+                            Edit Targets
                         </button>
                     )}
                 </div>
@@ -298,7 +298,7 @@ export default function Targets() {
 
                     {/* Timeframe View */}
                     <div className="w-full md:w-auto flex flex-col items-end">
-                        <p className="text-sm text-muted-foreground mb-2">Lihat Pecahan Target:</p>
+                        <p className="text-sm text-muted-foreground mb-2">View Breakdown By:</p>
                         {renderTimeframeTabs()}
                     </div>
                 </div>
@@ -306,8 +306,8 @@ export default function Targets() {
                 {/* Sub-Stats Summary (Read-Only Preview) */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8 pt-6 border-t border-border/50">
                     <div className="bg-secondary/30 p-4 rounded-xl">
-                        <p className="text-xs text-muted-foreground mb-1">Total Area</p>
-                        <p className="text-xl font-bold text-primary">{areas.length} Area</p>
+                        <p className="text-xs text-muted-foreground mb-1">Total Areas</p>
+                        <p className="text-xl font-bold text-primary">{areas.length} Areas</p>
                     </div>
                 </div>
             </div>
@@ -324,7 +324,7 @@ export default function Targets() {
                         </h3>
                     </div>
 
-                    {areas.length === 0 && <div className="p-8 text-center bg-secondary/10 rounded-xl border border-dashed border-border">Belum ada Area. Silakan tambah di menu Master Data.</div>}
+                    {areas.length === 0 && <div className="p-8 text-center bg-secondary/10 rounded-xl border border-dashed border-border">No Areas found. Please add in Master Data > Regional.</div>}
 
                     {areas.map((area) => {
                         const areaTargetPeriod = (area.target || 0) / timeDivisor;
@@ -346,7 +346,7 @@ export default function Targets() {
                                         <div>
                                             <h4 className="font-bold text-foreground text-lg">{area.name}</h4>
                                             <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                                <span>Kontribusi Global: {contributionPct}%</span>
+                                                <span>Global Contribution: {contributionPct}%</span>
                                             </div>
                                         </div>
                                     </div>
@@ -377,7 +377,7 @@ export default function Targets() {
                                     <div className="border-t border-border/50 bg-secondary/5 p-4 animate-in slide-in-from-top-2 duration-200">
                                         <div className="flex justify-between items-center mb-3">
                                             <h5 className="text-sm font-semibold text-muted-foreground flex items-center gap-1">
-                                                <Users size={14} /> Breakdown Kecamatan (% dari Target Area)
+                                                <Users size={14} /> District Breakdown (% of Area Target)
                                             </h5>
                                         </div>
 
@@ -419,7 +419,7 @@ export default function Targets() {
                                                     </div>
                                                 );
                                             })}
-                                            {area.subAreas.length === 0 && <p className="text-sm text-muted-foreground italic">Belum ada kecamatan di area ini.</p>}
+                                            {area.subAreas.length === 0 && <p className="text-sm text-muted-foreground italic">No cities in this area yet.</p>}
                                         </div>
                                     </div>
                                 )}
@@ -434,7 +434,7 @@ export default function Targets() {
                     <div className="bg-card border border-border/50 rounded-2xl p-6 shadow-sm">
                         <h3 className="font-semibold text-sm mb-4 flex items-center gap-2">
                             <PieChartIcon size={16} />
-                            Proporsi Target Area (Visual)
+                            Area Proportion (Visual)
                         </h3>
                         <div className="h-[200px] w-full">
                             <ResponsiveContainer width="100%" height="100%">

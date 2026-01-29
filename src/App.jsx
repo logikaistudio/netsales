@@ -1,29 +1,43 @@
+```javascript
 import React from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Layout from './components/Layout';
+// Pages
 import Dashboard from './pages/Dashboard';
 import Prospects from './pages/Prospects';
-import Targets from './pages/Targets';
-import ProductMaster from './pages/ProductMaster';
-import Placeholder from './pages/Placeholder';
+// Master Data Pages
+import Regional from './pages/master/Regional';
+import SalesTeam from './pages/master/SalesTeam';
+import Products from './pages/master/Products';
+import Promos from './pages/master/Promos';
+import Targets from './pages/master/Targets';
 import { MasterDataProvider } from './context/MasterDataContext';
-import MasterData from './pages/MasterData';
 
 function App() {
   return (
-    <MasterDataProvider>
-      <BrowserRouter>
+    <BrowserRouter>
+      <MasterDataProvider>
         <Layout>
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/prospects" element={<Prospects />} />
-            <Route path="/targets" element={<Targets />} />
-            <Route path="/master" element={<MasterData />} />
+            
+            {/* Master Data Routes */}
+            <Route path="/master" element={<Navigate to="/master/regional" replace />} />
+            <Route path="/master/regional" element={<Regional />} />
+            <Route path="/master/sales" element={<SalesTeam />} />
+            <Route path="/master/products" element={<Products />} />
+            <Route path="/master/promos" element={<Promos />} />
+            <Route path="/master/targets" element={<Targets />} />
+            
+            {/* Legacy Redirects (if needed) */}
+            <Route path="/targets" element={<Navigate to="/master/targets" replace />} />
           </Routes>
         </Layout>
-      </BrowserRouter>
-    </MasterDataProvider>
+      </MasterDataProvider>
+    </BrowserRouter>
   );
 }
 
 export default App;
+```

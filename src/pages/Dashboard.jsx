@@ -65,7 +65,7 @@ export default function Dashboard() {
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
                     <h1 className="text-3xl font-bold text-foreground tracking-tight">Dashboard Overview</h1>
-                    <p className="text-muted-foreground mt-1">Monitoring pencapaian sales FTTH & operasional.</p>
+                    <p className="text-muted-foreground mt-1">Monitoring FTTH sales & operational achievement.</p>
                 </div>
 
                 {/* Hotnews Widget */}
@@ -74,7 +74,7 @@ export default function Dashboard() {
                         <Megaphone size={16} />
                     </div>
                     <div className="text-sm font-medium truncate flex-1">
-                        🔥 Promo Internet 100Mbps hanya Rp200rb!
+                        🔥 Internet Promo 100Mbps only IDR 200k!
                     </div>
                 </div>
             </div>
@@ -82,15 +82,15 @@ export default function Dashboard() {
             {/* Highlights */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <StatCard
-                    title="Total Pendapatan"
-                    value="Rp 1.2M"
+                    title="Total Revenue"
+                    value="Rp 1.2B"
                     change="+12.5%"
                     trend="up"
                     icon={CreditCard}
                     color="text-blue-600 bg-blue-600"
                 />
                 <StatCard
-                    title="Pelanggan Baru"
+                    title="New Customers"
                     value="342"
                     change="+8.2%"
                     trend="up"
@@ -98,7 +98,7 @@ export default function Dashboard() {
                     color="text-indigo-600 bg-indigo-600"
                 />
                 <StatCard
-                    title="Target Sales"
+                    title="Sales Target"
                     value="85%"
                     change="-2.1%"
                     trend="down"
@@ -106,7 +106,7 @@ export default function Dashboard() {
                     color="text-amber-600 bg-amber-600"
                 />
                 <StatCard
-                    title="Billing Active"
+                    title="Active Billing"
                     value="2,405"
                     change="+4.3%"
                     trend="up"
@@ -122,7 +122,7 @@ export default function Dashboard() {
                     <div className="flex items-center justify-between mb-6">
                         <div>
                             <h3 className="font-bold text-lg text-foreground">Monthly Achievement</h3>
-                            <p className="text-sm text-muted-foreground">Perbandingan Target vs Actual (1 Tahun)</p>
+                            <p className="text-sm text-muted-foreground">Target vs Actual Comparison (1 Year)</p>
                         </div>
                         <select className="bg-secondary text-sm p-2 rounded-lg outline-none border-none">
                             <option>General</option>
@@ -185,7 +185,7 @@ export default function Dashboard() {
                     <div className="mb-6 flex justify-between items-center">
                         <div>
                             <h3 className="font-bold text-lg text-foreground">Top Sales Performance</h3>
-                            <p className="text-sm text-muted-foreground">Pencapaian target individu bulan ini</p>
+                            <p className="text-sm text-muted-foreground">Individual target achievement this month</p>
                         </div>
                         <button className="text-sm text-primary font-medium hover:underline">View All</button>
                     </div>
@@ -217,7 +217,7 @@ export default function Dashboard() {
                 {/* Mini Notification / Alert Panel */}
                 <div className="bg-gradient-to-br from-indigo-600 to-blue-700 p-6 rounded-3xl text-white shadow-lg shadow-blue-500/25">
                     <h3 className="font-bold text-lg mb-1">System Alerts</h3>
-                    <p className="text-blue-100 text-sm mb-6">Pemberitahuan penting sales.</p>
+                    <p className="text-blue-100 text-sm mb-6">Important sales notifications.</p>
 
                     <div className="space-y-4">
                         <div className="bg-white/10 backdrop-blur-md p-3 rounded-xl border border-white/10">
@@ -225,14 +225,14 @@ export default function Dashboard() {
                                 <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
                                 <span className="text-xs font-semibold text-blue-50">Achievement Unlocked</span>
                             </div>
-                            <p className="text-sm font-medium">Area Jabodetabek mencapai 105% target Q3!</p>
+                            <p className="text-sm font-medium">Jabodetabek Area reached 105% Q3 target!</p>
                         </div>
                         <div className="bg-white/10 backdrop-blur-md p-3 rounded-xl border border-white/10">
                             <div className="flex items-center gap-2 mb-1">
                                 <span className="w-2 h-2 bg-amber-400 rounded-full"></span>
                                 <span className="text-xs font-semibold text-blue-50">Stock Alert</span>
                             </div>
-                            <p className="text-sm font-medium">Stok Modem ONT menipis di Warehouse Utama.</p>
+                            <p className="text-sm font-medium">ONT Modem stock running low in Main Warehouse.</p>
                         </div>
                     </div>
                 </div>

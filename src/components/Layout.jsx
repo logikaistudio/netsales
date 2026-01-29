@@ -12,7 +12,9 @@ import {
     ChevronRight,
     ShoppingBag,
     MapPin,
-    UserCircle
+    UserCircle,
+    Tag,
+    Map
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -40,112 +42,150 @@ const SidebarItem = ({ icon: Icon, label, to, active, onClick, hasSubmenu, expan
             )}
             {active && (
                 <div className="absolute inset-0 bg-gradient-to-r from-white/10 to-transparent pointer-events-none" />
-            )}
-        </Link>
-    );
-};
+// SidebarItem component is no longer used with the new nested menu structure.
+// It will be removed as the rendering logic is now directly within the Layout component.
 
-export default function Layout({ children }) {
-    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-    const location = useLocation();
+export default function Layout({children}) {
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false); // Keep for potential mobile menu toggle
+            const location = useLocation();
 
-    // Close sidebar on route change (mobile)
+    // Close sidebar on route change (mobile) - still relevant if a mobile menu is implemented
     React.useEffect(() => {
-        setIsSidebarOpen(false);
+                setIsSidebarOpen(false);
     }, [location.pathname]);
 
-    const navItems = [
-        { icon: LayoutDashboard, label: 'Dashboard', to: '/' },
-        { icon: Users, label: 'Prospek & Sales', to: '/prospects' },
-        { icon: Target, label: 'Target Achievement', to: '/targets' },
-        { icon: Database, label: 'Master Data', to: '/master' },
-    ];
+            const navItems = [
+            {icon: LayoutDashboard, label: 'Dashboard', to: '/' },
+            {icon: Users, label: 'Prospects & Customer', to: '/prospects' },
+            {
+                icon: Database,
+            label: 'Master Data',
+            // No 'to' prop here, acts as a folder
+            children: [
+            {icon: Target, label: 'Target Achievement', to: '/master/targets' },
+            {icon: Users, label: 'Sales Team', to: '/master/sales' },
+            {icon: Map, label: 'Regional (Area/City)', to: '/master/regional' },
+            {icon: ShoppingBag, label: 'Products', to: '/master/products' },
+            {icon: Tag, label: 'Promos', to: '/master/promos' },
+            ]
+        },
+            ];
 
-    return (
-        <div className="min-h-screen bg-background flex">
-            {/* Mobile Sidebar Overlay */}
-            {isSidebarOpen && (
-                <div
-                    className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40 lg:hidden"
-                    onClick={() => setIsSidebarOpen(false)}
-                />
-            )}
-
-            {/* Sidebar */}
-            <aside
-                className={cn(
-                    "fixed top-0 left-0 z-50 h-full w-72 bg-card border-r border-border shadow-2xl lg:shadow-none transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:block",
-                    isSidebarOpen ? "translate-x-0" : "-translate-x-full"
+            return (
+            <div className="flex h-screen bg-secondary/30">
+                {/* Mobile Sidebar Overlay */}
+                {isSidebarOpen && (
+                    <div
+                        className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40 md:hidden"
+                        onClick={() => setIsSidebarOpen(false)}
+                    />
                 )}
-            >
-                <div className="h-full flex flex-col p-6">
-                    {/* Logo */}
-                    <div className="flex items-center gap-3 mb-10 px-2">
-                        <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-primary to-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/30">
-                            <span className="text-white font-bold text-xl">N</span>
-                        </div>
-                        <div>
-                            <h1 className="font-bold text-xl tracking-tight text-foreground">NetSales</h1>
-                            <p className="text-xs text-muted-foreground font-medium">FTTH System</p>
+
+                {/* Sidebar */}
+                <aside
+                    className={cn(
+                        "fixed top-0 left-0 z-50 h-full w-64 bg-card border-r border-border shadow-2xl md:shadow-none transition-transform duration-300 ease-in-out md:translate-x-0 md:static md:flex flex-col",
+                        isSidebarOpen ? "translate-x-0" : "-translate-x-full"
+                    )}
+                >
+                    <div className="p-6 border-b border-border/50">
+                        <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
+                                <span className="text-primary-foreground font-bold text-lg">N</span>
+                            </div>
+                            <h1 className="text-xl font-bold tracking-tight text-foreground">NetSales</h1>
                         </div>
                     </div>
 
-                    {/* Navigation */}
-                    <nav className="flex-1 space-y-2">
-                        {navItems.map((item) => (
-                            <SidebarItem
-                                key={item.to}
-                                {...item}
-                                active={location.pathname === item.to || (item.to !== '/' && location.pathname.startsWith(item.to))}
-                            />
+                    <nav className="flex-1 overflow-y-auto py-6 px-4 space-y-1">
+                        {navItems.map((item, index) => (
+                            <div key={index}>
+                                {item.children ? (
+                                    <div className="space-y-1">
+                                        <div className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-muted-foreground">
+                                            <item.icon size={18} />
+                                            <span>{item.label}</span>
+                                        </div>
+                                        <div className="ml-4 pl-4 border-l border-border/50 space-y-1">
+                                            {item.children.map((child, childIndex) => (
+                                                <NavLink
+                                                    key={childIndex}
+                                                    to={child.to}
+                                                    className={({ isActive }) =>
+                                                        clsx(
+                                                            "flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 group relative overflow-hidden",
+                                                            isActive
+                                                                ? "bg-primary text-primary-foreground shadow-sm"
+                                                                : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                                                        )
+                                                    }
+                                                >
+                                                    {/* <child.icon size={16} />  Optionally hide icon for children for cleaner look, or keep it */}
+                                                    <span>{child.label}</span>
+                                                </NavLink>
+                                            ))}
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <NavLink
+                                        to={item.to}
+                                        className={({ isActive }) =>
+                                            clsx(
+                                                "flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 group relative overflow-hidden",
+                                                isActive
+                                                    ? "bg-primary text-primary-foreground shadow-sm"
+                                                    : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                                            )
+                                        }
+                                    >
+                                        <item.icon size={18} />
+                                        <span>{item.label}</span>
+                                    </NavLink>
+                                )}
+                            </div>
                         ))}
                     </nav>
 
-                    {/* User Profile / Footer */}
-                    <div className="mt-auto pt-6 border-t border-border">
-                        <div className="flex items-center gap-3 p-3 rounded-xl bg-secondary/50 border border-border/50">
-                            <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600">
-                                <UserCircle size={24} />
+                    <div className="p-4 border-t border-border/50">
+                        <div className="bg-secondary/50 rounded-xl p-4 flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center text-white font-bold shadow-sm">
+                                AD
                             </div>
-                            <div className="flex-1 min-w-0">
-                                <p className="text-sm font-semibold truncate text-foreground">Jabo Leader</p>
-                                <p className="text-xs text-muted-foreground truncate">Jabodetabek Area</p>
+                            <div>
+                                <p className="text-sm font-semibold text-foreground">Admin User</p>
+                                <p className="text-xs text-muted-foreground">admin@netsales.com</p>
                             </div>
-                            <button className="p-2 hover:bg-white rounded-lg transition-colors text-muted-foreground hover:text-red-500">
-                                <LogOut size={18} />
-                            </button>
                         </div>
                     </div>
-                </div>
-            </aside>
+                </aside>
 
-            {/* Main Content */}
-            <main className="flex-1 min-w-0 flex flex-col h-screen overflow-hidden">
-                {/* Header */}
-                <header className="h-16 px-6 border-b border-border bg-card/50 backdrop-blur-xl flex items-center justify-between sticky top-0 z-30">
-                    <button
-                        onClick={() => setIsSidebarOpen(true)}
-                        className="lg:hidden p-2 -ml-2 text-muted-foreground hover:text-foreground"
-                    >
-                        <Menu size={24} />
-                    </button>
-
-                    <div className="ml-auto flex items-center gap-4">
-                        {/* Hotnews / Notifications */}
-                        <button className="relative p-2 rounded-full hover:bg-secondary text-muted-foreground hover:text-primary transition-colors">
-                            <Bell size={20} />
-                            <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white animate-pulse" />
+                {/* Main Content */}
+                <main className="flex-1 min-w-0 flex flex-col h-screen overflow-hidden md:ml-64">
+                    {/* Header */}
+                    <header className="h-16 px-6 border-b border-border bg-card/50 backdrop-blur-xl flex items-center justify-between sticky top-0 z-30">
+                        <button
+                            onClick={() => setIsSidebarOpen(true)}
+                            className="md:hidden p-2 -ml-2 text-muted-foreground hover:text-foreground"
+                        >
+                            <Menu size={24} />
                         </button>
-                    </div>
-                </header>
 
-                {/* Scrollable Content Area */}
-                <div className="flex-1 overflow-auto p-4 lg:p-8">
-                    <div className="max-w-7xl mx-auto space-y-8">
-                        {children}
+                        <div className="ml-auto flex items-center gap-4">
+                            {/* Hotnews / Notifications */}
+                            <button className="relative p-2 rounded-full hover:bg-secondary text-muted-foreground hover:text-primary transition-colors">
+                                <Bell size={20} />
+                                <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white animate-pulse" />
+                            </button>
+                        </div>
+                    </header>
+
+                    {/* Scrollable Content Area */}
+                    <div className="flex-1 overflow-auto p-4 lg:p-8">
+                        <div className="max-w-7xl mx-auto space-y-8">
+                            {children}
+                        </div>
                     </div>
-                </div>
-            </main>
-        </div>
-    );
+                </main>
+            </div>
+            );
 }
