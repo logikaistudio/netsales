@@ -153,8 +153,8 @@ export default function Layout({ children }) {
                 </header>
 
                 {/* Scrollable Content Area */}
-                <div className="flex-1 overflow-auto p-4 lg:p-8">
-                    <div className="max-w-7xl mx-auto space-y-8">
+                <div className="flex-1 overflow-auto p-4 lg:p-6">
+                    <div className="max-w-7xl mx-auto space-y-6">
                         {children}
                     </div>
                 </div>
