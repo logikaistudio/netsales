@@ -332,7 +332,8 @@ export default function Targets() {
                                                         </td>
                                                     )}
                                                 </tr>
-                                            ))}
+                                            );
+                                        })}
                                     </tbody>
 
                                     {/* Footer Add City Button */}
