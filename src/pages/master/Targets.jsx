@@ -41,66 +41,65 @@ export default function Targets() {
     // Initial Data Sync
     useEffect(() => {
         if (masterSubAreas.length > 0) {
-            // Initialize with UI Value populated for 'value' mode default
-            const initialized = JSON.parse(JSON.stringify(masterSubAreas)).map(item => ({
-                ...item,
-                uiInputValue: (item.target || 0).toString()
-            }));
+            // Initialize with UI Value as Percent
+            const initialized = JSON.parse(JSON.stringify(masterSubAreas)).map(item => {
+                const occupancy = parseInt(item.occupancy) || 0;
+                const target = parseInt(item.target) || 0;
+                // Convert to percent for initial display
+                const pct = occupancy > 0 ? ((target / occupancy) * 100).toFixed(2) : '0';
+                // Remove trailing .00 for cleaner look if integer
+                const displayVal = pct.endsWith('.00') ? pct.slice(0, -3) : pct;
+
+                return {
+                    ...item,
+                    uiInputValue: displayVal
+                };
+            });
             setSubAreas(initialized);
         }
     }, [masterSubAreas]);
 
-    const switchInputMode = (mode) => {
-        setTargetInputMode(mode);
-        setSubAreas(prev => prev.map(item => {
-            const occupancy = parseInt(item.occupancy) || 0;
-            const target = parseInt(item.target) || 0;
-            let displayVal = '';
-
-            if (mode === 'value') {
-                displayVal = target.toString();
-            } else {
-                // Convert to percent for display
-                const pct = occupancy > 0 ? ((target / occupancy) * 100).toFixed(1) : '0';
-                displayVal = pct.endsWith('.0') ? pct.slice(0, -2) : pct;
-            }
-            return { ...item, uiInputValue: displayVal };
-        }));
-    };
+    // Removed switchInputMode (No longer needed)
 
     const handleInputChange = (id, field, value) => {
         setSubAreas(prev => prev.map(item => {
             if (item.id === id) {
-                return { ...item, [field]: value };
+                // If occupancy changes, we might want to retain the PERCENTAGE and update the TARGET HP
+                // Or retain TARGET HP and update percentage?
+                // User asked for "Target is Percent", so if Occupancy changes, Percentage stays, Target HP updates.
+
+                const newItem = { ...item, [field]: value };
+
+                if (field === 'occupancy') {
+                    const newOcc = parseInt(value) || 0;
+                    // Use existing UI Percent to recalc target
+                    const currentPct = parseFloat(newItem.uiInputValue) || 0;
+                    newItem.target = Math.round((currentPct / 100) * newOcc);
+                }
+
+                return newItem;
             }
             return item;
         }));
     };
 
-    const handleTargetChange = (id, inputValue, occupancy) => {
+    const handleTargetPercentChange = (id, inputValue) => {
         setSubAreas(prev => prev.map(item => {
             if (item.id === id) {
-                // 1. Update visual input immediately
+                const occupancy = parseInt(item.occupancy) || 0;
+
+                // 1. Update visual input immediately (Percent)
                 const updatedItem = { ...item, uiInputValue: inputValue };
 
-                // 2. Calculate underlying target value
-                let newTarget = 0;
-                if (targetInputMode === 'value') {
-                    // Allow only numbers
-                    const val = inputValue.replace(/\D/g, '');
-                    newTarget = parseInt(val) || 0;
-                } else {
-                    // Percent Mode: Allow decimals
-                    const occ = parseInt(occupancy) || 0;
-                    const pct = parseFloat(inputValue); // Don't fallback to 0 immediately to allow typing "0."
+                // 2. Calculate underlying target value (HP)
+                let newTargetHP = 0;
+                const pct = parseFloat(inputValue);
 
-                    if (!isNaN(pct)) {
-                        newTarget = Math.round((pct / 100) * occ);
-                    } else {
-                        newTarget = 0;
-                    }
+                if (!isNaN(pct)) {
+                    newTargetHP = Math.round((pct / 100) * occupancy);
                 }
-                updatedItem.target = newTarget;
+
+                updatedItem.target = newTargetHP;
                 return updatedItem;
             }
             return item;
@@ -193,20 +192,7 @@ export default function Targets() {
                 <div className="flex gap-3">
                     {isEditing ? (
                         <>
-                            <div className="flex items-center gap-1 bg-secondary/30 p-1 rounded-lg mr-2">
-                                <button
-                                    onClick={() => switchInputMode('value')}
-                                    className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${targetInputMode === 'value' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
-                                >
-                                    Value
-                                </button>
-                                <button
-                                    onClick={() => switchInputMode('percent')}
-                                    className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${targetInputMode === 'percent' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
-                                >
-                                    Percent (%)
-                                </button>
-                            </div>
+
                             <button
                                 onClick={() => setIsEditing(false)}
                                 disabled={isSaving}
@@ -299,24 +285,18 @@ export default function Targets() {
                                 <table className="w-full text-sm text-left">
                                     <thead className="bg-secondary/20 text-muted-foreground border-b border-border/50">
                                         <tr>
-                                            <th className="px-6 py-4 font-medium w-[40%] pl-8">City / District Segment</th>
-                                            <th className="px-6 py-4 font-medium text-right w-[25%]">Homepass Capacity (HP)</th>
-                                            <th className="px-6 py-4 font-medium text-right w-[25%]">
-                                                Sales Target
-                                                {isEditing && (
-                                                    <span className="ml-2 text-xs font-normal text-muted-foreground bg-white/50 px-2 py-0.5 rounded">
-                                                        Input: {targetInputMode === 'value' ? 'Values' : '% of HP'}
-                                                    </span>
-                                                )}
-                                            </th>
-                                            {isEditing && <th className="px-6 py-4 w-[10%]"></th>}
+                                            <th className="px-6 py-4 font-medium w-[30%] pl-8">City / District Segment</th>
+                                            <th className="px-6 py-4 font-medium text-right w-[20%]">Homepass Capacity (HP)</th>
+                                            <th className="px-6 py-4 font-medium text-right w-[25%]">Sales Target (%)</th>
+                                            <th className="px-6 py-4 font-medium text-right w-[25%] bg-secondary/10">Target Value (HP)</th>
+                                            {isEditing && <th className="px-6 py-4 w-[5%]"></th>}
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-border/50">
                                         {area.cities.map(city => {
                                             const occupancy = parseInt(city.occupancy) || 0;
                                             const target = parseInt(city.target) || 0;
-                                            const percent = occupancy > 0 ? ((target / occupancy) * 100).toFixed(1) : '0.0';
+                                            const percent = parseFloat(city.uiInputValue) || (occupancy > 0 ? ((target / occupancy) * 100).toFixed(2) : '0');
 
                                             return (
                                                 <tr key={city.id} className="hover:bg-secondary/5 transition-colors group/row">
@@ -349,32 +329,25 @@ export default function Targets() {
                                                                 <input
                                                                     type="text"
                                                                     className="w-full text-right bg-background border border-input rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-bold text-primary"
-                                                                    value={city.uiInputValue !== undefined ? city.uiInputValue : (targetInputMode === 'value' ? city.target : parseFloat(percent))}
-                                                                    onChange={(e) => handleTargetChange(city.id, e.target.value, city.occupancy)}
+                                                                    value={city.uiInputValue !== undefined ? city.uiInputValue : ''}
+                                                                    onChange={(e) => handleTargetPercentChange(city.id, e.target.value)}
                                                                     placeholder="0"
                                                                 />
-                                                                <span className="absolute right-8 top-2.5 text-xs text-muted-foreground pointer-events-none opacity-50">
-                                                                    {targetInputMode === 'value' ? 'HP' : '%'}
-                                                                </span>
-
-                                                                {/* Helper Tooltip to show the OTHER value */}
-                                                                <div className="absolute right-0 -top-8 bg-black text-white text-xs px-2 py-1 rounded opacity-0 group-hover/input:opacity-100 transition-opacity pointer-events-none">
-                                                                    {targetInputMode === 'value'
-                                                                        ? `${percent}%`
-                                                                        : `${target} HP`
-                                                                    }
-                                                                </div>
+                                                                <span className="absolute right-8 top-2.5 text-xs text-muted-foreground pointer-events-none opacity-50">%</span>
                                                             </div>
                                                         ) : (
                                                             <div className="flex flex-col items-end">
                                                                 <span className="font-bold text-primary bg-primary/5 px-3 py-1 rounded-lg">
-                                                                    {target.toLocaleString()} HP
-                                                                </span>
-                                                                <span className="text-xs text-muted-foreground mt-1">
-                                                                    {percent}% of Capacity
+                                                                    {parseFloat(percent).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}%
                                                                 </span>
                                                             </div>
                                                         )}
+                                                    </td>
+                                                    <td className="px-6 py-4 text-right bg-secondary/5">
+                                                        <span className="font-bold text-foreground">
+                                                            {(city.target || 0).toLocaleString()}
+                                                        </span>
+                                                        <span className="text-xs text-muted-foreground ml-1">HP</span>
                                                     </td>
                                                     {isEditing && (
                                                         <td className="px-6 py-4 text-center">
@@ -394,7 +367,7 @@ export default function Targets() {
                                     {/* Footer Add City Button */}
                                     <tfoot className="border-t border-border/50 bg-secondary/5">
                                         <tr>
-                                            <td colSpan={isEditing ? 4 : 3} className="px-6 py-3">
+                                            <td colSpan={isEditing ? 5 : 4} className="px-6 py-3">
                                                 <button
                                                     onClick={() => setShowAddCityModal(area.id)}
                                                     className="flex items-center gap-2 text-sm font-medium text-primary hover:text-primary/80 transition-colors px-2 py-1 rounded-lg hover:bg-primary/5"
