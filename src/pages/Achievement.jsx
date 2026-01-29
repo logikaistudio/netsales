@@ -5,14 +5,15 @@ import { formatCurrency } from '../utils/currency';
 import { BarChart3, TrendingUp, Users, MapPin } from 'lucide-react';
 
 export default function Achievement() {
-    const { subAreas } = useMasterData();
+    const { subAreas, salesTeam } = useMasterData();
     const [achievements, setAchievements] = useState([]);
+    const [salesAchievements, setSalesAchievements] = useState([]);
     const [loading, setLoading] = useState(true);
     const [viewMode, setViewMode] = useState('general'); // general, area, sales
 
     useEffect(() => {
         fetchAchievementData();
-    }, [subAreas]);
+    }, [subAreas, salesTeam]);
 
     const fetchAchievementData = async () => {
         try {
@@ -26,13 +27,8 @@ export default function Achievement() {
 
             if (error) throw error;
 
-            // 2. Map Data
-            // We need to group prospects by subAreaId and match with targets from subAreas table
-            // Note: subAreas from context already has updated 'target' and 'occupancy' 
-            // IF we reload context. Assuming context is fresh.
-
-            // For now, let's mock the aggregation logic or do client-side aggregation
-            const data = subAreas.map(area => {
+            // 2. Area Aggregation
+            const areaData = subAreas.map(area => {
                 const areaSales = prospects.filter(p => p.sub_area_id === area.id);
                 const actual = areaSales.length;
                 const target = area.target || 0;
@@ -49,7 +45,37 @@ export default function Achievement() {
                 };
             });
 
-            setAchievements(data);
+            setAchievements(areaData);
+
+            // 3. Sales Aggregation
+            const salesData = salesTeam.map(sales => {
+                // Assuming prospect has 'salesId' or 'sales_id' column. 
+                // Adjust property name based on DB schema. Usually camelCase in frontend if transformed, or snake_case if direct.
+                // Let's check a prospect sample or assume standard mapping. 
+                // In MasterDataContext.js, we don't transform prospect keys yet potentially?
+                // Wait, prospects are fetched directly here. So keys are snake_case 'sales_id' usually.
+                // Or 'salesId' if we map it? Prospects.jsx uses 'salesId'.
+                // Let's check prospects raw data.
+                // Safe bet: check both or standard 'sales_id' from supabase.
+
+                const mySales = prospects.filter(p => p.sales_id === sales.id || p.salesId === sales.id);
+                const actual = mySales.length;
+                // Currently Sales don't have individual targets in DB schema, treat as N/A or derive?
+                // For now, just show Actual Sales ranking.
+
+                return {
+                    id: sales.id,
+                    name: sales.name,
+                    subAreaId: sales.subAreaId,
+                    city: sales.subAreaId
+                        ? subAreas.find(sa => sa.id === sales.subAreaId)?.name
+                        : '-',
+                    actual
+                };
+            });
+
+            // Sort by highest sales
+            setSalesAchievements(salesData.sort((a, b) => b.actual - a.actual));
 
         } catch (err) {
             console.error('Error fetching achievement:', err);
@@ -135,10 +161,57 @@ export default function Achievement() {
                 >
                     Per Area / City
                 </button>
-                {/* Add Sales view later */}
+                <button
+                    onClick={() => setViewMode('sales')}
+                    className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 ${viewMode === 'sales' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'}`}
+                >
+                    Per Sales Person
+                </button>
             </div>
 
             {/* Content per View Mode */}
+            {viewMode === 'sales' && (
+                <div className="bg-card rounded-2xl border border-border overflow-hidden">
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-sm text-left">
+                            <thead className="bg-secondary/50 text-muted-foreground border-b border-border">
+                                <tr>
+                                    <th className="px-6 py-4 font-medium">Rank</th>
+                                    <th className="px-6 py-4 font-medium">Sales Person</th>
+                                    <th className="px-6 py-4 font-medium">Area Assigned</th>
+                                    <th className="px-6 py-4 font-medium text-right">Total Activation</th>
+                                    <th className="px-6 py-4 font-medium text-right">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-border">
+                                {salesAchievements.map((item, index) => (
+                                    <tr key={item.id} className="hover:bg-secondary/20 transition-colors">
+                                        <td className="px-6 py-4 font-medium text-muted-foreground">#{index + 1}</td>
+                                        <td className="px-6 py-4 font-bold">{item.name}</td>
+                                        <td className="px-6 py-4 text-muted-foreground capitalize">{item.city || '-'}</td>
+                                        <td className="px-6 py-4 text-right font-bold text-lg text-primary">{item.actual.toLocaleString()}</td>
+                                        <td className="px-6 py-4 text-right">
+                                            {item.actual > 0 ? (
+                                                <span className="inline-flex items-center px-2 py-1 rounded bg-green-50 text-green-700 text-xs font-medium">Active</span>
+                                            ) : (
+                                                <span className="inline-flex items-center px-2 py-1 rounded bg-gray-100 text-gray-500 text-xs font-medium">No Sales</span>
+                                            )}
+                                        </td>
+                                    </tr>
+                                ))}
+                                {salesAchievements.length === 0 && (
+                                    <tr>
+                                        <td colSpan={5} className="px-6 py-8 text-center text-muted-foreground">
+                                            No sales data available.
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            )}
+
             {viewMode === 'area' && (
                 <div className="bg-card rounded-2xl border border-border overflow-hidden">
                     <div className="overflow-x-auto">
