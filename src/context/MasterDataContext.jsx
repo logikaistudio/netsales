@@ -5,8 +5,12 @@ const MasterDataContext = createContext();
 
 export function MasterDataProvider({ children }) {
     const [areas, setAreas] = useState([]);
+    const [subAreas, setSubAreas] = useState([]);
+    const [districts, setDistricts] = useState([]);
+    const [salesTeam, setSalesTeam] = useState([]);
     const [products, setProducts] = useState([]);
     const [promos, setPromos] = useState([]);
+    const [loading, setLoading] = useState(true);
 
     // Fetch initial data
     useEffect(() => {
@@ -18,12 +22,14 @@ export function MasterDataProvider({ children }) {
         try {
             const { data: areasData } = await supabase.from('areas').select('*').order('id', { ascending: true });
             const { data: subAreasData } = await supabase.from('sub_areas').select('*').order('id', { ascending: true });
+            const { data: districtsData } = await supabase.from('districts').select('*').order('id', { ascending: true }); // New table
             const { data: salesData } = await supabase.from('sales_team').select('*').order('id', { ascending: true });
             const { data: productsData } = await supabase.from('products').select('*').order('id', { ascending: true });
             const { data: promosData } = await supabase.from('promos').select('*').order('id', { ascending: true });
 
             if (areasData) setAreas(areasData);
             if (subAreasData) setSubAreas(subAreasData.map(s => ({ ...s, areaId: s.area_id })));
+            if (districtsData) setDistricts(districtsData.map(d => ({ ...d, subAreaId: d.sub_area_id })));
             if (salesData) setSalesTeam(salesData.map(s => ({ ...s, subAreaId: s.sub_area_id })));
             if (productsData) setProducts(productsData);
             if (promosData) setPromos(promosData);
@@ -113,6 +119,7 @@ export function MasterDataProvider({ children }) {
         <MasterDataContext.Provider value={{
             areas, addArea, deleteArea,
             subAreas, addSubArea, deleteSubArea,
+            districts,
             salesTeam, addSales, deleteSales,
             products, addProduct, deleteProduct,
             promos, addPromo, deletePromo,
