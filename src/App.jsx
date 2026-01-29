@@ -4,6 +4,7 @@ import Layout from './components/Layout';
 // Pages
 import Dashboard from './pages/Dashboard';
 import Prospects from './pages/Prospects';
+import Achievement from './pages/Achievement';
 // Master Data Pages
 import MasterDataIndex from './pages/master/MasterDataIndex';
 import Regional from './pages/master/Regional';
@@ -22,6 +23,7 @@ function App() {
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/prospects" element={<Prospects />} />
+            <Route path="/achievement" element={<Achievement />} />
 
             {/* Master Data Routes */}
             <Route path="/master" element={<MasterDataIndex />} />

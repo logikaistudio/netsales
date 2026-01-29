@@ -15,7 +15,8 @@ import {
     UserCircle,
     Tag,
     Map,
-    LocateFixed
+    LocateFixed,
+    TrendingUp
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -36,13 +37,13 @@ export default function Layout({ children }) {
     const navItems = [
         { icon: LayoutDashboard, label: 'Dashboard', to: '/' },
         { icon: Users, label: 'Prospects & Customer', to: '/prospects' },
-        { icon: Target, label: 'Target Achievement', to: '/master/targets' },
+        { icon: TrendingUp, label: 'Achievement', to: '/achievement' }, // New Achievement Menu
         {
             icon: Database,
             label: 'Master Data',
             children: [
+                { icon: Map, label: 'Targets & Regional', to: '/master/targets' }, // Merged
                 { icon: Users, label: 'Sales Team', to: '/master/sales' },
-                { icon: Map, label: 'Regional (Area/City)', to: '/master/regional' },
                 { icon: ShoppingBag, label: 'Products', to: '/master/products' },
                 { icon: Tag, label: 'Promos', to: '/master/promos' },
             ]
